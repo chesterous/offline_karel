@@ -8,6 +8,17 @@ Students in Stanford Code in Place, prior to learning Python, learn a Python-lik
 
 ## Version History
 
+* 0.2
+    * Minor Updates
+    * Click to add/remove beepers from map
+    * Displays history
+    * Keyboard shortcuts
+        * u: undo
+        * r: redo
+        * w: pick beeper
+        * s: put beeper
+        * d: move
+        * a: turn_left
 * 0.1
     * Initial Release
     * Supports move, turn_left, put_beeper, pick_beeper

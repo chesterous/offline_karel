@@ -193,6 +193,26 @@
                 }
                 refresh()
             }
+            function type_char(str) {
+                if(str == "w") {
+                    execute_call("pick_beeper")
+                }
+                if(str == "s") {
+                    execute_call("put_beeper")
+                }
+                if(str == "d") {
+                    execute_call("move")
+                }
+                if(str == "a") {
+                    execute_call("turn_left")
+                }
+                if(str == "u") {
+                    undo_call()
+                }
+                if(str == "r") {
+                    do_call()
+                }
+            }
             function refresh() {
                 document.getElementById("ta1").value = calls.call_list.join("\n")
                 draw_grid()
@@ -213,11 +233,24 @@
                     click_box(col, row)
                 })
 
+                onkeypress = function(e) {
+                    e = e || window.event
+                    var charCode = (typeof e.which == "number") ? e.which : e.keyCode
+                    if (charCode > 0) {
+                        type_char(String.fromCharCode(charCode))
+                    }
+                }
+
+                var ta1 = document.getElementById("ta1")
+                ta1.onkeypress = function(e) {
+                    e.stopPropagation()
+                }
+
                 refresh()
                 
             }
         </script>
-        <table style="width:100%;height:100%">
+        <table id="tab1" style="width:100%;height:100%">
             <tr>
                 <td width="16%">
                     <textarea id="ta1" style="width:100%;height:100%"></textarea>
