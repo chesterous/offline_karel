@@ -2,14 +2,6 @@
 <html>
     <head>
         <title>Offline Karel (one file Karel)</title>
-        <style>
-            .bone {
-                background-repeat: no-repeat;
-                background-attachment: fixed;
-                background-position: center;
-                background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAFiUAABYlAUlSJPAAAAB3SURBVChTY/wPBAxEABSFjIyMUBYEIJsBVwhSdCPAAiwIAxobTiAUQxX+Byr6/6OjAMwGYRAbJAZV8h+uEKYIBtDFmIAMCPCQgDKQAJIYQqGGBsOPCx1gt4IwiA0SgwOwuUAAYv74sQHK+w9mI0n/Jz148AMGBgCKC3d6FXE2lQAAAABJRU5ErkJggg==')
-            }
-        </style>
     </head>
     <body onload="setup()">
         <script>
@@ -39,7 +31,9 @@
                 kcol: 0,
                 kdir: right
             }
-            // code is a character, (e)mpty (b)eeper (k)arel
+            function error(msg) {
+                console.log("ERROR - " + msg)
+            }
             function draw(img, col, row, dir = right) {
                 if(dir == down) {
                     angle = Math.PI / 2;
@@ -71,11 +65,6 @@
                 ctx.drawImage(img, 0, 0);
                 ctx.restore();
             }
-            function draw_code(code, col, row) {
-                if(code == 'e') draw(images.empty, col, row)
-                else if(code == 'b') draw(images.beeper, col, row)
-                else if(code == 'k') draw(images.karel, col, row)
-            }
             function draw_grid() {
                 ctx.clearRect(0, 0, box_width * cols, box_height * rows)
                 for(let row = 0; row < rows; row++) {
@@ -88,14 +77,8 @@
             function draw_karel() {
                 draw(images.karel, state.kcol, state.krow, state.kdir)
             }
-            // I guess throw out future history if not at the end of the "stack"
-            
-            function undo_call() {
-                if(calls.pos <= 0) {
-                    console.log("ERROR - START OF LIST")
-                    return
-                }
-                id = calls.call_list[calls.pos - 1]
+            function try_undo(id) {
+                // might add error check later
                 if(id == "move") {
                     if(state.kdir == right) {
                         state.kcol -= 1
@@ -115,49 +98,42 @@
                 }
                 else if(id == "put_beeper") {
                     if(state.grid[state.krow][state.kcol] == 0) {
-                        console.log("ERROR - NO BEEPERS TO UNDO PUT")
-                        return
+                        error("NO BEEPERS TO UNDO PUT")
+                        return true
                     }
                     state.grid[state.krow][state.kcol]--
                 }
                 else if(id == "pick_beeper") {
                     state.grid[state.krow][state.kcol]++
                 }
-                calls.pos--
-                refresh()
             }
-            function do_call() {
-                if(calls.pos >= calls.call_list.length) {
-                    console.log("ERROR - END OF LIST")
-                    return
-                }
-                id = calls.call_list[calls.pos]
+            function try_call(id) {
                 if(id == "move") {
                     if(state.kdir == right) {
                         if(state.kcol >= cols - 1) {
-                            console.log("ERROR - TRYING TO WALK OFF GRID")
-                            return
+                            error("TRYING TO WALK OFF GRID")
+                            return true
                         }
                         state.kcol += 1
                     }
                     else if(state.kdir == down) {
                         if(state.krow >= rows - 1) {
-                            console.log("ERROR - TRYING TO WALK OFF GRID")
-                            return
+                            error("TRYING TO WALK OFF GRID")
+                            return true
                         }
                         state.krow += 1
                     }
                     else if(state.kdir == left) {
                         if(state.kcol <= 0) {
-                            console.log("ERROR - TRYING TO WALK OFF GRID")
-                            return
+                            error("TRYING TO WALK OFF GRID")
+                            return true
                         }
                         state.kcol -= 1
                     }
                     else {
                         if(state.krow <= 0) {
-                            console.log("ERROR - TRYING TO WALK OFF GRID")
-                            return
+                            error("TRYING TO WALK OFF GRID")
+                            return true
                         }
                         state.krow -= 1
                     }
@@ -170,19 +146,45 @@
                 }
                 else if(id == "pick_beeper") {
                     if(state.grid[state.krow][state.kcol] == 0) {
-                        console.log("ERROR - NO BEEPERS TO PICK")
-                        return
+                        error("NO BEEPERS TO PICK")
+                        return true
                     }
                     state.grid[state.krow][state.kcol]--
                 }
-                calls.pos++
-                refresh()
             }
             function execute_call(id) {
-                // overwrite end of list if you did undo then a new call
-                calls.call_list.length = calls.pos
-                calls.call_list.push(id)
-                do_call()
+                let err = try_call(id)
+                if(!err) {
+                    // overwrite end of list if you did undo then a new call
+                    calls.call_list.length = calls.pos
+                    calls.call_list.push(id)
+                    calls.pos++
+                    refresh()
+                }
+            }
+            function undo() {
+                if(calls.pos <= 0) {
+                    error("START OF LIST")
+                    return
+                }
+                id = calls.call_list[calls.pos - 1]
+                err = try_undo(id)
+                if(!err) {
+                    calls.pos--
+                    refresh()
+                }
+            }
+            function redo() {
+                if(calls.pos >= calls.call_list.length) {
+                    error("END OF LIST")
+                    return
+                }
+                id = calls.call_list[calls.pos]
+                let err = try_call(id)
+                if(!err) {
+                    calls.pos++
+                    refresh()
+                }
             }
             function click_box(col, row) {
                 if(state.grid[row][col] > 0) {
@@ -207,10 +209,10 @@
                     execute_call("turn_left")
                 }
                 if(str == "u") {
-                    undo_call()
+                    undo()
                 }
                 if(str == "r") {
-                    do_call()
+                    redo()
                 }
             }
             function refresh() {
@@ -257,8 +259,8 @@
                 </td>
                 <td>
                     <canvas id="canv1" width="900" height="360" style="width:100%; border:2px solid #000000;"></canvas>
-                    <button onclick="undo_call()">undo</button>
-                    <button onclick="do_call()">redo</button>
+                    <button onclick="undo()">undo</button>
+                    <button onclick="redo()">redo</button>
                     <button onclick='execute_call("move")'>move</button>
                     <button onclick='execute_call("turn_left")'>turn_left</button>
                     <button onclick='execute_call("put_beeper")'>put_beeper</button>
