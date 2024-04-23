@@ -5,6 +5,9 @@
     </head>
     <body onload="setup()">
         <script>
+            // dimensions of the world
+            let cols = 15
+            let rows = 6
             const constants = {
                 // canvas pixels per square
                 boxw: 60,
@@ -27,14 +30,10 @@
                 pos: 0
             }
             var canv, ctx
-            let cols = 15
-            let rows = 6
             var images = {
                 empty: new Image(),
                 beeper: new Image(),
-                karel: new Image(),
-                width: 25,
-                height: 25
+                karel: new Image()
             }
             var state = {
                 grid: JSON.parse(JSON.stringify(Array(rows).fill(Array(cols).fill(0)))),
@@ -230,7 +229,8 @@
                 let ta = document.getElementById("ta1")
                 let tab = document.getElementById("id_title").value
                 if(tab == "history") {
-                    ta.value = calls.call_list.join("\n")
+                    ta.value = " " + calls.call_list.slice(0, calls.pos).join("\n ") +
+                         "\n>" + calls.call_list.slice(calls.pos).join("\n ")
                 }
                 else if(tab == "code") {
                     ta.value = "(have not finished supporting coding)"
@@ -239,7 +239,7 @@
                 draw_karel()
             }
             function load_all_images() {
-                var counter = 3;
+                var counter = 3
                 function waiter() {
                     counter--
                     if(counter == 0) {
