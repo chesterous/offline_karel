@@ -216,7 +216,14 @@
                 }
             }
             function refresh() {
-                document.getElementById("ta1").value = calls.call_list.join("\n")
+                let ta = document.getElementById("ta1")
+                let tab = document.getElementById("id_title").value
+                if(tab == "history") {
+                    ta.value = calls.call_list.join("\n")
+                }
+                else if(tab == "code") {
+                    ta.value = "(have not finished supporting coding)"
+                }
                 draw_grid()
                 draw_karel()
             }
@@ -251,22 +258,42 @@
                 refresh()
                 
             }
+            var cur_tab = 0
+            function change_tab(id) {
+                // todo
+                let tab = document.getElementById("id_title").value
+                let ta = document.getElementById("ta1")
+                if(tab == "hide") {
+                    ta.style.display = "none"
+                    document.getElementById("td1").width = 0
+                }
+                else {
+                    ta.style.display = "block"
+                }
+                refresh()
+            }
         </script>
         <table id="tab1" style="width:100%;height:100%">
             <tr>
-                <td width="16%">
+                <td id="td1" width="16%">
                     <textarea id="ta1" style="width:100%;height:100%"></textarea>
                 </td>
                 <td>
-                    <canvas id="canv1" width="900" height="360" style="width:100%; border:2px solid #000000;"></canvas>
-                    <button onclick="undo()">undo</button>
-                    <button onclick="redo()">redo</button>
-                    <button onclick='execute_call("move")'>move</button>
-                    <button onclick='execute_call("turn_left")'>turn_left</button>
-                    <button onclick='execute_call("put_beeper")'>put_beeper</button>
-                    <button onclick='execute_call("pick_beeper")'>pick_beeper</button>
+                    <canvas id="canv1" width="900" height="360" style="width:100%;height:100%;border:2px solid #000000;"></canvas>
                 </td>
             </tr>
         </table>
+        
+        <select name="id_title" id="id_title" onchange="change_tab()">
+            <option value="history">history</option>
+            <option value="code">code</option>
+            <option value="hide">hide</option>
+          </select>
+          <button onclick="undo()">undo</button>
+          <button onclick="redo()">redo</button>
+          <button onclick='execute_call("move")'>move</button>
+          <button onclick='execute_call("turn_left")'>turn_left</button>
+          <button onclick='execute_call("put_beeper")'>put_beeper</button>
+          <button onclick='execute_call("pick_beeper")'>pick_beeper</button>
     </body>
 </html>
