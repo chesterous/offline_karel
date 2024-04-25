@@ -2,12 +2,16 @@
 <html>
     <head>
         <title>Offline Karel (one file Karel)</title>
+        <style>
+            textarea {
+                white-space: pre;
+                overflow-wrap: normal;
+                overflow-x: scroll;
+            }
+        </style>
     </head>
     <body onload="setup()">
         <script>
-            // dimensions of the world
-            let cols = 15
-            let rows = 6
             const constants = {
                 // canvas pixels per square
                 boxw: 60,
@@ -23,7 +27,24 @@
                 right: 0,
                 down: 1,
                 left: 2,
-                up: 3
+                up: 3,
+                functions: {
+                    'move': true,
+                    'turn_left': true,
+                    'put_beeper': true,
+                    'pick_beeper': true
+                },
+                code_buttons: [
+                    "syntax_button"
+                ]
+            }
+            // dimensions of the world
+            let cols = 15
+            let rows = 6
+            let initial_state = {
+                kcol: 0,
+                krow: rows - 1,
+                kdir: constants.right
             }
             var calls = {
                 call_list: [],
@@ -35,14 +56,59 @@
                 beeper: new Image(),
                 karel: new Image()
             }
-            var state = {
-                grid: JSON.parse(JSON.stringify(Array(rows).fill(Array(cols).fill(0)))),
-                krow: rows - 1,
-                kcol: 0,
-                kdir: constants.right
+            function setup_state() {
+                function run_step() {
+                    if(state.code.pos >= state.code.unparsed.length - 1) {
+                        clearInterval(state.timer)
+                        return
+                    }
+                    let line = state.code.unparsed[state.code.pos].trim()
+                    let index = line.length - 2
+                    if(line.substring(index) == "()" && constants.functions[line.substring(0, index)]) {
+                        execute_call(line.substring(0, index))
+                    }
+                    state.code.pos++
+                    style_code(state.code.pos)
+                }
+                return {
+                    grid: JSON.parse(JSON.stringify(Array(rows).fill(Array(cols).fill(0)))),
+                    krow: initial_state.krow,
+                    kcol: initial_state.kcol,
+                    kdir: initial_state.kdir,
+                    prev_tab: "history",
+                    syntax_checking: false,
+                    code_styled: false,
+                    code: {
+                        unparsed: [],
+                        parsed: [],
+                        timer: null,
+                        pos: 0,
+                    },
+                    run_code: () => {
+                        let tab = document.getElementById("id_title").value
+                        if(tab != "code") {
+                            return
+                        }
+                        state.timer = setInterval(run_step, 500)
+                        style_code(state.code.pos)
+                        // run_step()
+                    },
+                    rew_code: () => {
+                        state.code.pos = 0
+                        if(state.code_styled) {
+                            style_code(0)
+                        }
+                        state.kcol = initial_state.kcol
+                        state.krow = initial_state.krow
+                        state.kdir = initial_state.kdir
+                        refresh()
+                    }
+                }
             }
+            var state = setup_state()
             function error(msg) {
                 console.log("ERROR - " + msg)
+                clearInterval(state.timer)
             }
             function draw(img, col, row, dir = constants.right) {
                 if(dir == constants.down) {
@@ -232,9 +298,6 @@
                     ta.value = " " + calls.call_list.slice(0, calls.pos).join("\n ") +
                          "\n>" + calls.call_list.slice(calls.pos).join("\n ")
                 }
-                else if(tab == "code") {
-                    ta.value = "(have not finished supporting coding)"
-                }
                 draw_grid()
                 draw_karel()
             }
@@ -281,25 +344,98 @@
                 load_all_images()
                 
             }
-            var cur_tab = 0
-            function change_tab(id) {
-                // todo
+            function change_tab() {
                 let tab = document.getElementById("id_title").value
                 let ta = document.getElementById("ta1")
+                // backup
+                if(state.prev_tab == "code") {
+                    if(!state.code_styled) {
+                        state.code.unparsed = ta.value.split("\n")
+                    }
+                }
                 if(tab == "hide") {
                     ta.style.display = "none"
                     document.getElementById("td1").width = 0
                 }
-                else {
+                else if(tab == "code") {
+                    ta.value = state.code.unparsed.join("\n")
                     ta.style.display = "block"
                 }
+                else {
+                    ta.value = " " + calls.call_list.slice(0, calls.pos).join("\n ") +
+                         "\n>" + calls.call_list.slice(calls.pos).join("\n ")
+                    ta.style.display = "block"
+                }
+                state.prev_tab = tab
+                // rewrites text area
                 refresh()
+            }
+            function style_code(marker = -1) {
+                let res = []
+                if(!state.code_styled) {
+                    state.code.unparsed = document.getElementById("ta1").value.split("\n")
+                    state.code_styled = true
+                }
+                for(let i = 0; i < state.code.unparsed.length; i++) {
+                    let line = state.code.unparsed[i]
+                    let trimmed = line.trim()
+                    let index = trimmed.length - 2
+                    if(i == marker) {
+                        symbol = "➡️"
+                    }
+                    else if(trimmed.substring(index) == "()" && constants.functions[trimmed.substring(0, index)]) {
+                        symbol = "🔹" //"✅"
+                    }
+                    else if(trimmed == ""){
+                        symbol = "🔹"
+                    }
+                    else {
+                        symbol = "❌"
+                    }
+                    res.push(symbol + line)
+                }
+                document.getElementById("ta1").value = res.join("\n")
+            }
+            function check_syntax() {
+                let tab = document.getElementById("id_title").value
+                if(tab != "code") {
+                    return
+                }
+                if(state.code_styled) {
+                    document.getElementById("ta1").value = state.code.unparsed.join("\n")
+                }
+                else {
+                    style_code()
+                    // state.code.unparsed = document.getElementById("ta1").value.split("\n")
+                    // let render_lines = state.code.unparsed.map((line) => {
+                    //     let trimmed = line.trim()
+                    //     let index = trimmed.length - 2
+                    //     if(trimmed.substring(index) == "()" && constants.functions[trimmed.substring(0, index)]) {
+                    //         symbol = "✅"
+                    //     }
+                    //     else if(trimmed == ""){
+                    //         symbol = "➡️"
+                    //     }
+                    //     else {
+                    //         symbol = "❌🔹"
+                    //     }
+                    //     return symbol + line
+                    // })
+                    // //document.getElementById("ta1").value = code_lines.map((line) => "✅" + line).join("\n")
+                    // document.getElementById("ta1").value = render_lines.join("\n")
+                }
+                // state.syntax_checking = !state.syntax_checking
+            }
+            function edit_code() {
+                // if(state.syntax_checking) {
+                //     check_syntax()
+                // }
             }
         </script>
         <table id="tab1" style="width:100%;height:100%">
             <tr>
                 <td id="td1" width="16%">
-                    <textarea id="ta1" style="width:100%;height:100%"></textarea>
+                    <textarea id="ta1" style="width:100%;height:100%" onfocus="edit_code()"></textarea>
                 </td>
                 <td>
                     <canvas id="canv1" width="900" height="360" style="width:100%;height:100%;border:2px solid #000000;"></canvas>
@@ -312,11 +448,14 @@
             <option value="code">code</option>
             <option value="hide">hide</option>
           </select>
-          <button onclick="undo()">undo</button>
-          <button onclick="redo()">redo</button>
-          <button onclick='execute_call("move")'>move</button>
-          <button onclick='execute_call("turn_left")'>turn_left</button>
-          <button onclick='execute_call("put_beeper")'>put_beeper</button>
-          <button onclick='execute_call("pick_beeper")'>pick_beeper</button>
+          <button id="undo_button" onclick="undo()">undo</button>
+          <button id="redo_button" onclick="redo()">redo</button>
+          <button id="move_button" onclick='execute_call("move")'>move</button>
+          <button id="turn_button" onclick='execute_call("turn_left")'>turn_left</button>
+          <button id="put_button" onclick='execute_call("put_beeper")'>put_beeper</button>
+          <button id="pick_button" onclick='execute_call("pick_beeper")'>pick_beeper</button>
+          <button id="syntax_button" onclick='check_syntax()'>check syntax</button>
+          <button id="run_button" onclick='state.run_code()'>run code</button>
+          <button id="rew_button" onclick='state.rew_code()'>rewind code</button>
     </body>
 </html>
