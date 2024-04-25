@@ -76,7 +76,6 @@
                     kcol: initial_state.kcol,
                     kdir: initial_state.kdir,
                     prev_tab: "history",
-                    syntax_checking: false,
                     code_styled: false,
                     code: {
                         unparsed: [],
@@ -85,9 +84,13 @@
                         pos: 0,
                     },
                     run_code: () => {
+                        let ta = document.getElementById("ta1")
                         let tab = document.getElementById("id_title").value
                         if(tab != "code") {
                             return
+                        }
+                        if(!state.code_styled) {
+                            state.code.unparsed = ta.value.split("\n")
                         }
                         state.timer = setInterval(run_step, 500)
                         style_code(state.code.pos)
@@ -406,30 +409,17 @@
                 }
                 else {
                     style_code()
-                    // state.code.unparsed = document.getElementById("ta1").value.split("\n")
-                    // let render_lines = state.code.unparsed.map((line) => {
-                    //     let trimmed = line.trim()
-                    //     let index = trimmed.length - 2
-                    //     if(trimmed.substring(index) == "()" && constants.functions[trimmed.substring(0, index)]) {
-                    //         symbol = "✅"
-                    //     }
-                    //     else if(trimmed == ""){
-                    //         symbol = "➡️"
-                    //     }
-                    //     else {
-                    //         symbol = "❌🔹"
-                    //     }
-                    //     return symbol + line
-                    // })
-                    // //document.getElementById("ta1").value = code_lines.map((line) => "✅" + line).join("\n")
-                    // document.getElementById("ta1").value = render_lines.join("\n")
                 }
-                // state.syntax_checking = !state.syntax_checking
+            }
+            function unstyle_code() {
+                if(state.code_styled) {
+                    let ta = document.getElementById("ta1")
+                    ta.value = state.code.unparsed.join("\n")
+                    state.code_styled = false
+                }
             }
             function edit_code() {
-                // if(state.syntax_checking) {
-                //     check_syntax()
-                // }
+                unstyle_code()
             }
         </script>
         <table id="tab1" style="width:100%;height:100%">
