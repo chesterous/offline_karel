@@ -91,13 +91,15 @@
                     },
                     controls: {
                         play: run_play,
+                        play_back: run_play_back,
                         pause: run_pause,
                         rewind: run_rewind,
+                        fast_forward: run_fast_forward,
                         forward: run_forward,
                         back: run_back
                     },
-                    reset: () => {
-                        state.grid = JSON.parse(initial_state.grid_string)
+                    reset_karel: () => {
+                        // state.grid = JSON.parse(initial_state.grid_string)
                         state.krow = initial_state.krow
                         state.kcol = initial_state.kcol
                         state.kdir = initial_state.kdir
@@ -144,7 +146,6 @@
                             }
                             style_code(state.code.pos)
                         }
-                        refresh()
                     }
                     else if(command.type == "if" || command.type == "while") {
                         let res = try_test(command.test)
@@ -157,25 +158,52 @@
                             style_code(state.code.pos)
                         }
                     }
+                    else {
+                        // skip over both errors and empty lines
+                        state.code.pos++
+                    }
+                    // jumps (while loop return)
+                    if(state.code.pos < state.code.parsed.length && command.type != "while") {
+                        let next_command = state.code.parsed[state.code.pos]
+                        if(next_command.hasOwnProperty("next")) {
+                            state.code.pos = next_command.next
+                        }
+                    }
+                    refresh()
                 }
                 function run_back() {
-                    let command = state.call_history[--state.call_history_pos].command
-                    if(command.type == "call") {
-                        try_undo(command.id)
+                    if(state.call_history_pos == 0) {
+                        run_pause()
+                        return
                     }
+                    let call = state.call_history[--state.call_history_pos]
+                    if(call.command.type == "call") {
+                        try_undo(call.command.id)
+                    }
+                    state.code.pos = call.line
+                    refresh()
                 }
                 function run_rewind() {
                     while(state.call_history_pos > 0) {
                         run_back()
                     }
-                    state.code.pos = 0
+                    // state.code.pos = 0
                     if(state.code_styled) {
                         style_code(0)
                     }
                     refresh()
                 }
+                function run_fast_forward() {
+                    for(let limit = 1000; limit > 0; limit--) {
+                        run_forward()
+                    }
+                    refresh()
+                }
                 function run_play() {
                     state.timer = setInterval(run_forward, 500)
+                }
+                function run_play_back() {
+                    state.timer = setInterval(run_back, 500)
                 }
                 function run_pause() {
                     clearInterval(state.timer)
@@ -219,7 +247,7 @@
                             test = line.substring(6, line.length - 3)
                             if(constants.conditions[test]) {
                                 res = {type: "while", test: test, end: find_block_end(i)}
-                                required_jumps[res.end - 1] = i
+                                required_jumps[res.end] = i
                             }
                             else {
                                 res = {type: "error"}
@@ -596,7 +624,15 @@
                 let tab = document.getElementById("id_title").value
                 let ta = document.getElementById("ta1")
                 if(tab == "code") {
-                    state.reset()
+                    // state.reset()
+
+                    // require it end in newline
+                    // (one reason is for a required noop when needing to loop back for a while loop)
+                    let lines = ta.value.split("\n")
+                    if(lines[lines.length - 1].trim() != "") {
+                        lines.push("")
+                        ta.value = lines.join("\n")
+                    }
                     state.code.load(ta.value)
                 }
             }
@@ -622,10 +658,13 @@
           <button id="put_button" onclick='execute_call("put_beeper")'>put_beeper</button>
           <button id="pick_button" onclick='execute_call("pick_beeper")'>pick_beeper</button>
           <button id="syntax_button" onclick='check_syntax()'>check syntax</button>
-          <button id="rew_button" onclick='state.controls.rewind()'>rewind code</button>
-          <button id="undo_button" onclick="state.controls.back()">back</button>
-          <button id="redo_button" onclick="state.controls.forward()">forward</button>
-          <button id="run_button" onclick='state.controls.play()'>run code</button>
+          <button id="rew_button" onclick='state.controls.rewind()'>&lt;&lt;</button>
+          <button id="run_button" onclick='state.controls.play_back()'>&lt;=</button>
+          <button id="undo_button" onclick="state.controls.back()">&lt;</button>
+          <button id="redo_button" onclick="state.controls.forward()">&gt;</button>
+          <button id="run_button" onclick='state.controls.play()'>=&gt;</button>
+          <button id="rew_button" onclick='state.controls.fast_forward()'>&gt;&gt;</button>
+          <button id="rew_button" onclick='state.reset_karel()'>reset karel position</button>
           <button onclick="state.reset()">reset</button>
     </body>
 </html>
