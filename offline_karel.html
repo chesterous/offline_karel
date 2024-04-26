@@ -53,8 +53,20 @@
                     'facing_west': true,
                     'not_facing_west': true
                 },
+                playground_buttons: [
+                    "move_button",
+                    "turn_button",
+                    "put_button",
+                    "pick_button"
+                ],
                 code_buttons: [
-                    "syntax_button"
+                    "syntax_button",
+                    "rewind_button",
+                    "play_back_button",
+                    "back_button",
+                    "forward_button",
+                    "play_button",
+                    "fast_forward_button"
                 ]
             }
             // dimensions of the world
@@ -82,6 +94,7 @@
                     code_styled: false,
                     call_history: [],
                     call_history_pos: 0,
+                    backup: null,
                     code: {
                         unparsed: [],
                         parsed: [],
@@ -104,6 +117,20 @@
                         state.kcol = initial_state.kcol
                         state.kdir = initial_state.kdir
                         refresh()
+                    },
+                    backup_state: () => {
+                        state.backup = [
+                            JSON.stringify(state.grid),
+                            state.krow,
+                            state.kcol,
+                            state.kdir
+                        ]
+                    },
+                    restore_state: () => {
+                        state.grid = JSON.parse(state.backup[0])
+                        state.krow = state.backup[1]
+                        state.kcol = state.backup[2]
+                        state.kdir = state.backup[3]
                     },
                     render_history: render_history
                 }
@@ -181,6 +208,9 @@
                         try_undo(call.command.id)
                     }
                     state.code.pos = call.line
+                    if(state.code_styled) {
+                        style_code(0)
+                    }
                     refresh()
                 }
                 function run_rewind() {
@@ -554,6 +584,7 @@
                 change_tab()
             }
             function change_tab() {
+                let old_state
                 let tab = document.getElementById("id_title").value
                 let ta = document.getElementById("ta1")
                 // backup
@@ -562,11 +593,11 @@
                         state.code.unparsed = ta.value.split("\n")
                     }
                 }
-                if(tab == "hide") {
-                    ta.style.display = "none"
-                    document.getElementById("td1").width = 0
+                else if(state.prev_tab == "playground") {
+                    state.restore_state()
                 }
-                else if(tab == "code") {
+                
+                if(tab == "code") {
                     ta.disabled = false
                     ta.value = state.code.unparsed.join("\n")
                     ta.style.display = "block"
@@ -575,6 +606,28 @@
                     ta.disabled = true
                     ta.value = state.render_history()
                     ta.style.display = "block"
+                }
+                else if(tab == "playground") {
+                    state.backup_state()
+                    ta.style.display = "none"
+                    document.getElementById("td1").width = 0
+                }
+
+                if(tab == "playground") {
+                    constants.playground_buttons.forEach((id) => {
+                        document.getElementById(id).style.display = "inline-block"
+                    })
+                    constants.code_buttons.forEach((id) => {
+                        document.getElementById(id).style.display = "none"
+                    })
+                }
+                else {
+                    constants.code_buttons.forEach((id) => {
+                        document.getElementById(id).style.display = "inline-block"
+                    })
+                    constants.playground_buttons.forEach((id) => {
+                        document.getElementById(id).style.display = "none"
+                    })
                 }
                 state.prev_tab = tab
                 // rewrites text area
@@ -651,18 +704,18 @@
         <select name="id_title" id="id_title" onchange="change_tab()">
             <option value="code">code</option>
             <option value="history">history</option>
-            <option value="hide">hide</option>
+            <option value="playground">playground</option>
           </select>
           <button id="move_button" onclick='execute_call("move")'>move</button>
           <button id="turn_button" onclick='execute_call("turn_left")'>turn_left</button>
           <button id="put_button" onclick='execute_call("put_beeper")'>put_beeper</button>
           <button id="pick_button" onclick='execute_call("pick_beeper")'>pick_beeper</button>
           <button id="syntax_button" onclick='check_syntax()'>check syntax</button>
-          <button id="rew_button" onclick='state.controls.rewind()'>&lt;&lt;</button>
-          <button id="run_button" onclick='state.controls.play_back()'>&lt;=</button>
-          <button id="undo_button" onclick="state.controls.back()">&lt;</button>
-          <button id="redo_button" onclick="state.controls.forward()">&gt;</button>
-          <button id="run_button" onclick='state.controls.play()'>=&gt;</button>
-          <button id="rew_button" onclick='state.controls.fast_forward()'>&gt;&gt;</button>
+          <button id="rewind_button" onclick='state.controls.rewind()'>&lt;&lt;</button>
+          <button id="play_back_button" onclick='state.controls.play_back()'>&lt;=</button>
+          <button id="back_button" onclick="state.controls.back()">&lt;</button>
+          <button id="forward_button" onclick="state.controls.forward()">&gt;</button>
+          <button id="play_button" onclick='state.controls.play()'>=&gt;</button>
+          <button id="fast_forward_button" onclick='state.controls.fast_forward()'>&gt;&gt;</button>
     </body>
 </html>
