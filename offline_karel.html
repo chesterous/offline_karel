@@ -34,6 +34,25 @@
                     'put_beeper': true,
                     'pick_beeper': true
                 },
+                conditions: {
+                    'front_is_clear': true,
+                    'front_is_blocked': true,
+                    'beepers_present': true,
+                    'no_beepers_present': true,
+                    'left_is_clear': true,
+                    'left_is_blocked': true,
+                    'right_is_clear': true,
+                    'right_is_blocked': true,
+//beepers_in_bag()	no_beepers_in_bag()	Does Karel have any beepers in its bag?
+                    'facing_north': true,
+                    'not_facing_north': true,
+                    'facing_south': true,
+                    'not_facing_south': true,
+                    'facing_east': true,
+                    'not_facing_east': true,
+                    'facing_west': true,
+                    'not_facing_west': true
+                },
                 code_buttons: [
                     "syntax_button"
                 ]
@@ -44,11 +63,8 @@
             let initial_state = {
                 kcol: 0,
                 krow: rows - 1,
-                kdir: constants.right
-            }
-            var calls = {
-                call_list: [],
-                pos: 0
+                kdir: constants.right,
+                grid_string: JSON.stringify(Array(rows).fill(Array(cols).fill(0)))
             }
             var canv, ctx
             var images = {
@@ -57,56 +73,160 @@
                 karel: new Image()
             }
             function setup_state() {
-                function run_step() {
-                    if(state.code.pos >= state.code.unparsed.length - 1) {
-                        clearInterval(state.timer)
-                        return
-                    }
-                    let line = state.code.unparsed[state.code.pos].trim()
-                    let index = line.length - 2
-                    if(line.substring(index) == "()" && constants.functions[line.substring(0, index)]) {
-                        execute_call(line.substring(0, index))
-                    }
-                    state.code.pos++
-                    style_code(state.code.pos)
-                }
-                return {
-                    grid: JSON.parse(JSON.stringify(Array(rows).fill(Array(cols).fill(0)))),
+                let state = {
+                    grid: JSON.parse(initial_state.grid_string),
                     krow: initial_state.krow,
                     kcol: initial_state.kcol,
                     kdir: initial_state.kdir,
                     prev_tab: "history",
                     code_styled: false,
+                    call_history: [],
+                    call_history_pos: 0,
                     code: {
                         unparsed: [],
                         parsed: [],
                         timer: null,
                         pos: 0,
+                        load: load_code
                     },
-                    run_code: () => {
-                        let ta = document.getElementById("ta1")
-                        let tab = document.getElementById("id_title").value
-                        if(tab != "code") {
-                            return
-                        }
-                        if(!state.code_styled) {
-                            state.code.unparsed = ta.value.split("\n")
-                        }
-                        state.timer = setInterval(run_step, 500)
-                        style_code(state.code.pos)
-                        // run_step()
+                    controls: {
+                        play: run_play,
+                        pause: run_pause,
+                        rewind: run_rewind,
+                        forward: run_forward,
+                        back: run_back
                     },
-                    rew_code: () => {
-                        state.code.pos = 0
-                        if(state.code_styled) {
-                            style_code(0)
-                        }
-                        state.kcol = initial_state.kcol
+                    reset: () => {
+                        state.grid = JSON.parse(initial_state.grid_string)
                         state.krow = initial_state.krow
+                        state.kcol = initial_state.kcol
                         state.kdir = initial_state.kdir
                         refresh()
+                    },
+                    render_history: render_history
+                }
+                function history_string(h) {
+                    if(h.command.type == "call") {
+                        return h.command.id + "()"
+                    }
+                    else {
+                        return ""
                     }
                 }
+                function render_history() {
+                    let h = state.call_history.map(history_string)
+                    return " " + h.slice(0, state.call_history_pos).join("\n ") +
+                         "\n>" + h.slice(state.call_history_pos).join("\n ")
+                }
+                function run_forward() {
+                    if(state.code.pos >= state.code.parsed.length) {
+                        run_pause()
+                        return
+                    }
+                    let command = state.code.parsed[state.code.pos]
+
+                    if(command.type == "call") {
+                        let err = try_call(command.id)
+                        if(!err) {
+                            if(state.call_history_pos < state.call_history.length) {
+                                state.call_history.length = state.call_history_pos
+                            }
+                            state.call_history.push({
+                                command: command,
+                                line: state.code.pos
+                            })
+                            state.call_history_pos++
+                            if(command.hasOwnProperty("next")) {
+                                state.code.pos = command.next
+                            }
+                            else {
+                                state.code.pos++
+                            }
+                            style_code(state.code.pos)
+                        }
+                        refresh()
+                    }
+                    else if(command.type == "if" || command.type == "while") {
+                        let res = try_test(command.test)
+                        if(res) {
+                            state.code.pos++
+                            style_code(state.code.pos)
+                        }
+                        else {
+                            state.code.pos = command.end
+                            style_code(state.code.pos)
+                        }
+                    }
+                }
+                function run_back() {
+                    let command = state.call_history[--state.call_history_pos].command
+                    if(command.type == "call") {
+                        try_undo(command.id)
+                    }
+                }
+                function run_rewind() {
+                    while(state.call_history_pos > 0) {
+                        run_back()
+                    }
+                    state.code.pos = 0
+                    if(state.code_styled) {
+                        style_code(0)
+                    }
+                    refresh()
+                }
+                function run_play() {
+                    state.timer = setInterval(run_forward, 500)
+                }
+                function run_pause() {
+                    clearInterval(state.timer)
+                }
+                function parse() {
+                    let required_jumps = state.code.unparsed.map((line) => -1)
+                    let spaces = state.code.unparsed.map((line) => {
+                        let sps = 0
+                        while(sps < line.length && line[sps] == " ") {
+                            sps++
+                        }
+                        return sps
+                    })
+                    function find_block_end(start) {
+                        let res
+                        for(res = start + 1; res < spaces.length && spaces[res] > spaces[start]; res++);
+                        return res
+                    }
+                    state.code.parsed = []
+                    for(let i = 0; i < state.code.unparsed.length; i++) {
+                        let line = state.code.unparsed[i].trim()
+                        let index = line.length - 2
+                        if(line.substring(index) == "()" && constants.functions[line.substring(0, index)]) {
+                            res = {type: "call", id: line.substring(0, index)}
+                        }
+                        else if(line.startsWith("if ")) {
+                            test = line.substring(3, line.length - 3)
+                            res = {type: "if", test: test, end: find_block_end(i)}
+                        }
+                        else if(line.startsWith("while ")) {
+                            test = line.substring(6, line.length - 3)
+                            res = {type: "while", test: test, end: find_block_end(i)}
+                            required_jumps[res.end - 1] = i
+                        }
+                        else if(line == "") {
+                            res = {type: "noop"}
+                        }
+                        else {
+                            res = {type: "error"}
+                        }
+                        if(required_jumps[i] != -1) {
+                            res["next"] = required_jumps[i]
+                        }
+                        state.code.parsed.push(res)
+                    }
+                }
+                function load_code(code) {
+                    state.code.unparsed = code.split("\n")
+                    parse()
+                }
+                return state
             }
             var state = setup_state()
             function error(msg) {
@@ -186,36 +306,41 @@
                     state.grid[state.krow][state.kcol]++
                 }
             }
+            function front_is_clear() {
+                if(state.kdir == constants.right && state.kcol >= cols - 1) {
+                    return false
+                }
+                else if(state.kdir == constants.down && state.krow >= rows - 1) {
+                    return false
+                }
+                else if(state.kdir == constants.left && state.kcol <= 0) {
+                    return false
+                }
+                else if(state.krow <= 0) {
+                    return false
+                }
+                return true
+
+            }
             function try_call(id) {
                 if(id == "move") {
+                    if(!front_is_clear) {
+                        error("FRONT IS NOT CLEAR")
+                        return true
+                    }
                     if(state.kdir == constants.right) {
-                        if(state.kcol >= cols - 1) {
-                            error("TRYING TO WALK OFF GRID")
-                            return true
-                        }
                         state.kcol += 1
                     }
                     else if(state.kdir == constants.down) {
-                        if(state.krow >= rows - 1) {
-                            error("TRYING TO WALK OFF GRID")
-                            return true
-                        }
                         state.krow += 1
                     }
                     else if(state.kdir == constants.left) {
-                        if(state.kcol <= 0) {
-                            error("TRYING TO WALK OFF GRID")
-                            return true
-                        }
                         state.kcol -= 1
                     }
                     else {
-                        if(state.krow <= 0) {
-                            error("TRYING TO WALK OFF GRID")
-                            return true
-                        }
                         state.krow -= 1
                     }
+                    
                 }
                 else if(id == "turn_left") {
                     state.kdir = (state.kdir + 3) % 4
@@ -231,37 +356,76 @@
                     state.grid[state.krow][state.kcol]--
                 }
             }
+            function try_test(test) {
+                if(test == "front_is_clear") {
+                    return front_is_clear()
+                }
+                else if(test == "front_is_blocked") {
+                    return !front_is_clear()
+                }
+                else if(test == "beepers_present") {
+                    return state.grid[state.krow][state.kcol] > 0
+                }
+                else if(test == "no_beepers_present") {
+                    return state.grid[state.krow][state.kcol] == 0
+                }
+                else if(test == "front_is_blocked") {
+                    return !front_is_clear()
+                }
+                else if(test == "left_is_clear") {
+                    state.kdir--
+                    res = front_is_clear()
+                    state.kdir++
+                    return res
+                }
+                else if(test == "left_is_blocked") {
+                    state.kdir--
+                    res = !front_is_clear()
+                    state.kdir++
+                    return res
+                }
+                else if(test == "right_is_clear") {
+                    state.kdir++
+                    res = front_is_clear()
+                    state.kdir--
+                    return res
+                }
+                else if(test == "right_is_blocked") {
+                    state.kdir++
+                    res = !front_is_clear()
+                    state.kdir--
+                    return res
+                }
+                else if(test == "facing_north") {
+                    return state.kdir == constants.up
+                }
+                else if(test == "not_facing_north") {
+                    return state.kdir == !constants.up
+                }
+                else if(test == "facing_south") {
+                    return state.kdir == constants.down
+                }
+                else if(test == "not_facing_south") {
+                    return state.kdir == !constants.down
+                }
+                else if(test == "facing_east") {
+                    return state.kdir == constants.right
+                }
+                else if(test == "not_facing_east") {
+                    return state.kdir == !constants.right
+                }
+                else if(test == "facing_west") {
+                    return state.kdir == constants.left
+                }
+                else if(test == "not_facing_west") {
+                    return state.kdir == !constants.left
+                }
+// //beepers_in_bag()	no_beepers_in_bag()	Does Karel have any beepers in its bag?
+            }
+            // add to code and run
             function execute_call(id) {
                 let err = try_call(id)
                 if(!err) {
-                    // overwrite end of list if you did undo then a new call
-                    calls.call_list.length = calls.pos
-                    calls.call_list.push(id)
-                    calls.pos++
-                    refresh()
-                }
-            }
-            function undo() {
-                if(calls.pos <= 0) {
-                    error("START OF LIST")
-                    return
-                }
-                id = calls.call_list[calls.pos - 1]
-                err = try_undo(id)
-                if(!err) {
-                    calls.pos--
-                    refresh()
-                }
-            }
-            function redo() {
-                if(calls.pos >= calls.call_list.length) {
-                    error("END OF LIST")
-                    return
-                }
-                id = calls.call_list[calls.pos]
-                let err = try_call(id)
-                if(!err) {
-                    calls.pos++
                     refresh()
                 }
             }
@@ -298,8 +462,7 @@
                 let ta = document.getElementById("ta1")
                 let tab = document.getElementById("id_title").value
                 if(tab == "history") {
-                    ta.value = " " + calls.call_list.slice(0, calls.pos).join("\n ") +
-                         "\n>" + calls.call_list.slice(calls.pos).join("\n ")
+                    ta.value = state.render_history()
                 }
                 draw_grid()
                 draw_karel()
@@ -345,7 +508,7 @@
                 }
 
                 load_all_images()
-                
+                change_tab()
             }
             function change_tab() {
                 let tab = document.getElementById("id_title").value
@@ -361,12 +524,13 @@
                     document.getElementById("td1").width = 0
                 }
                 else if(tab == "code") {
+                    ta.disabled = false
                     ta.value = state.code.unparsed.join("\n")
                     ta.style.display = "block"
                 }
-                else {
-                    ta.value = " " + calls.call_list.slice(0, calls.pos).join("\n ") +
-                         "\n>" + calls.call_list.slice(calls.pos).join("\n ")
+                else if(tab == "history") {
+                    ta.disabled = true
+                    ta.value = state.render_history()
                     ta.style.display = "block"
                 }
                 state.prev_tab = tab
@@ -375,29 +539,21 @@
             }
             function style_code(marker = -1) {
                 let res = []
-                if(!state.code_styled) {
-                    state.code.unparsed = document.getElementById("ta1").value.split("\n")
-                    state.code_styled = true
-                }
                 for(let i = 0; i < state.code.unparsed.length; i++) {
-                    let line = state.code.unparsed[i]
-                    let trimmed = line.trim()
-                    let index = trimmed.length - 2
                     if(i == marker) {
-                        symbol = "➡️"
+                        symbol = "> " //➡️
                     }
-                    else if(trimmed.substring(index) == "()" && constants.functions[trimmed.substring(0, index)]) {
-                        symbol = "🔹" //"✅"
-                    }
-                    else if(trimmed == ""){
-                        symbol = "🔹"
+                    else if(state.code.parsed[i].type == "error") {
+                        symbol = "X " //❌
                     }
                     else {
-                        symbol = "❌"
+                        symbol = "* " //🔹✅
+                        // symbol = "* " //🔹
                     }
-                    res.push(symbol + line)
+                    res.push(symbol + state.code.unparsed[i])
                 }
                 document.getElementById("ta1").value = res.join("\n")
+                state.code_styled = true
             }
             function check_syntax() {
                 let tab = document.getElementById("id_title").value
@@ -421,11 +577,19 @@
             function edit_code() {
                 unstyle_code()
             }
+            function change_code() {
+                let tab = document.getElementById("id_title").value
+                let ta = document.getElementById("ta1")
+                if(tab == "code") {
+                    state.reset()
+                    state.code.load(ta.value)
+                }
+            }
         </script>
         <table id="tab1" style="width:100%;height:100%">
             <tr>
                 <td id="td1" width="16%">
-                    <textarea id="ta1" style="width:100%;height:100%" onfocus="edit_code()"></textarea>
+                    <textarea id="ta1" style="width:100%;height:100%" onfocus="edit_code()" onchange="change_code()"></textarea>
                 </td>
                 <td>
                     <canvas id="canv1" width="900" height="360" style="width:100%;height:100%;border:2px solid #000000;"></canvas>
@@ -438,14 +602,15 @@
             <option value="code">code</option>
             <option value="hide">hide</option>
           </select>
-          <button id="undo_button" onclick="undo()">undo</button>
-          <button id="redo_button" onclick="redo()">redo</button>
           <button id="move_button" onclick='execute_call("move")'>move</button>
           <button id="turn_button" onclick='execute_call("turn_left")'>turn_left</button>
           <button id="put_button" onclick='execute_call("put_beeper")'>put_beeper</button>
           <button id="pick_button" onclick='execute_call("pick_beeper")'>pick_beeper</button>
           <button id="syntax_button" onclick='check_syntax()'>check syntax</button>
-          <button id="run_button" onclick='state.run_code()'>run code</button>
-          <button id="rew_button" onclick='state.rew_code()'>rewind code</button>
+          <button id="rew_button" onclick='state.controls.rewind()'>rewind code</button>
+          <button id="undo_button" onclick="state.controls.back()">back</button>
+          <button id="redo_button" onclick="state.controls.forward()">forward</button>
+          <button id="run_button" onclick='state.controls.play()'>run code</button>
+          <button onclick="state.reset()">reset</button>
     </body>
 </html>

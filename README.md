@@ -7,6 +7,16 @@ Provides an IDE for editing and running Karel code, but is completely contained 
 Students in Stanford Code in Place, prior to learning Python, learn a Python-like variant of Karel programming using online resources. This project tries to replicate most of the functionality of those resources, but does not require an internet connection and can be run locally.
 
 ## Version History
+* 0.4
+    * support for while and if and most conditionals
+    * conditionals not tested, may contain obvious bugs
+    * supported conditions:
+        * (front/left/right)_is_(clear/blocked)
+        * (no_)beepers_present
+        * (not_)facing_(north/south/east/west)
+    * unsupported:
+        * (no_)beepers_in_bag()
+    * code still kind of messy
 * 0.3
     * hideous code to support... writing code
     * frankenstein of different programming methodologies
