@@ -199,16 +199,31 @@
                         let line = state.code.unparsed[i].trim()
                         let index = line.length - 2
                         if(line.substring(index) == "()" && constants.functions[line.substring(0, index)]) {
-                            res = {type: "call", id: line.substring(0, index)}
+                            if(constants.functions[line.substring(0, index)]) {
+                                res = {type: "call", id: line.substring(0, index)}
+                            }
+                            else {
+                                res = {type: "error"}
+                            }
                         }
                         else if(line.startsWith("if ")) {
                             test = line.substring(3, line.length - 3)
-                            res = {type: "if", test: test, end: find_block_end(i)}
+                            if(constants.conditions[test]) {
+                                res = {type: "if", test: test, end: find_block_end(i)}
+                            }
+                            else {
+                                res = {type: "error"}
+                            }
                         }
                         else if(line.startsWith("while ")) {
                             test = line.substring(6, line.length - 3)
-                            res = {type: "while", test: test, end: find_block_end(i)}
-                            required_jumps[res.end - 1] = i
+                            if(constants.conditions[test]) {
+                                res = {type: "while", test: test, end: find_block_end(i)}
+                                required_jumps[res.end - 1] = i
+                            }
+                            else {
+                                res = {type: "error"}
+                            }
                         }
                         else if(line == "") {
                             res = {type: "noop"}
