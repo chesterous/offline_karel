@@ -649,8 +649,8 @@
         </table>
         
         <select name="id_title" id="id_title" onchange="change_tab()">
-            <option value="history">history</option>
             <option value="code">code</option>
+            <option value="history">history</option>
             <option value="hide">hide</option>
           </select>
           <button id="move_button" onclick='execute_call("move")'>move</button>
@@ -664,7 +664,5 @@
           <button id="redo_button" onclick="state.controls.forward()">&gt;</button>
           <button id="run_button" onclick='state.controls.play()'>=&gt;</button>
           <button id="rew_button" onclick='state.controls.fast_forward()'>&gt;&gt;</button>
-          <button id="rew_button" onclick='state.reset_karel()'>reset karel position</button>
-          <button onclick="state.reset()">reset</button>
     </body>
 </html>
