@@ -57,7 +57,8 @@
                     "move_button",
                     "turn_button",
                     "put_button",
-                    "pick_button"
+                    "pick_button",
+                    "reset_button"
                 ],
                 code_buttons: [
                     "syntax_button",
@@ -131,6 +132,19 @@
                         state.krow = state.backup[1]
                         state.kcol = state.backup[2]
                         state.kdir = state.backup[3]
+                        refresh()
+                    },
+                    backup_restore: () => {
+                        let backup = [
+                            JSON.stringify(state.grid),
+                            state.krow,
+                            state.kcol,
+                            state.kdir
+                        ]
+                        if(state.backup) {
+                            state.restore_state()
+                        }
+                        state.backup = backup
                     },
                     render_history: render_history
                 }
@@ -594,7 +608,8 @@
                     }
                 }
                 else if(state.prev_tab == "playground") {
-                    state.restore_state()
+                    // state.restore_state()
+                    state.backup_restore()
                 }
                 
                 if(tab == "code") {
@@ -608,7 +623,8 @@
                     ta.style.display = "block"
                 }
                 else if(tab == "playground") {
-                    state.backup_state()
+                    // state.backup_state()
+                    state.backup_restore()
                     ta.style.display = "none"
                     document.getElementById("td1").width = 0
                 }
@@ -710,6 +726,7 @@
           <button id="turn_button" onclick='execute_call("turn_left")'>turn_left</button>
           <button id="put_button" onclick='execute_call("put_beeper")'>put_beeper</button>
           <button id="pick_button" onclick='execute_call("pick_beeper")'>pick_beeper</button>
+          <button id="reset_button" onclick='state.restore_state()'>reset state to code</button>
           <button id="syntax_button" onclick='check_syntax()'>check syntax</button>
           <button id="rewind_button" onclick='state.controls.rewind()'>&lt;&lt;</button>
           <button id="play_back_button" onclick='state.controls.play_back()'>&lt;=</button>
