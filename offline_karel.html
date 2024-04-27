@@ -224,12 +224,15 @@
                         if(res) {
                             state.code.stack.push(state.code.pos)
                             state.code.pos++
-                            style_code(state.code.pos)
                         }
                         else {
                             state.code.pos = command.end
-                            style_code(state.code.pos)
                         }
+                    }
+                    else if(command.type == "else") {
+                        // this code runs when the if test fails
+                        state.code.stack.push(state.code.pos)
+                        state.code.pos++
                     }
                     else {
                         // skip over both errors and empty lines
@@ -237,7 +240,7 @@
                     }
                     // whiles jump back to check
                     let next_command = state.code.parsed[state.code.pos]
-                    if(state.code.stack.length > next_command.indent + 1) {
+                    if(state.code.stack.length > next_command.indent) {
                         console.log("bones")
                         let last_line = state.code.stack[state.code.stack.length - 1]
                         let last_command = state.code.parsed[last_line]
@@ -245,7 +248,13 @@
                         if(last_command.type == "while") {
                             state.code.pos = last_line
                         }
+                        else if(last_command.type == "if") {
+                            if(next_command.type == "else") {
+                                state.code.pos = next_command.end
+                            }
+                        }
                     }
+                    style_code(state.code.pos)
                     refresh()
                 }
                 // TODO: change other code with run forward not being actually execute
@@ -348,6 +357,9 @@
                             else {
                                 res = {type: "error"}
                             }
+                        }
+                        else if(line.startsWith("else")) {
+                            res = {type: "else", end: find_block_end(i)}
                         }
                         else if(line.startsWith("while ")) {
                             test = line.substring(6, line.length - 3)

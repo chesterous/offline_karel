@@ -10,7 +10,6 @@ This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 
 
 ## TODO
 * Features needing implementation
-    * if/else
     * for
     * function calls with recursion
 * Possible future of development
