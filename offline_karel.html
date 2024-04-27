@@ -116,8 +116,8 @@
                     kdir: initial_state.kdir,
                     prev_tab: "history",
                     code_styled: false,
-                    call_history: [],
-                    call_history_pos: 0,
+                    run_history: [],
+                    run_history_pos: 0,
                     backup: null,
                     code: {
                         unparsed: [],
@@ -172,18 +172,20 @@
                     },
                     render_history: render_history
                 }
-                function history_string(h) {
-                    if(h.command.type == "call") {
-                        return h.command.id + "()"
+                function history_string(command) {
+                    if(command.type == "call") {
+                        return command.id + "()"
                     }
                     else {
-                        return ""
+                        return "-"
                     }
                 }
                 function render_history() {
-                    let h = state.call_history.map(history_string)
-                    return " " + h.slice(0, state.call_history_pos).join("\n ") +
-                         "\n>" + h.slice(state.call_history_pos).join("\n ")
+                    let h = state.run_history.map((line) => {
+                        return history_string(state.code.parsed[line])
+                    })
+                    return " " + h.slice(0, state.run_history_pos).join("\n ") +
+                         "\n>" + h.slice(state.run_history_pos).join("\n ")
                 }
                 function run_forward() {
                     // not sure if this can happen.
@@ -191,32 +193,26 @@
                         error("SOMEHOW RUNNING BEFORE CODE PROPERLY PARSED")
                         return
                     }
+                    
                     // there is always a noop code at the end
                     if(state.code.pos >= state.code.parsed.length - 1) {
                         state.code.pos = state.code.parsed.length - 1
                         run_pause()
                         return
                     }
+
+                    // TODO: this might push errored stuff into the history
+                    // that doesn't actually execute, not sure if htat's good or bad
+                    state.run_history.splice(state.run_history_pos + 1) // maybe not necessary, was for playground
+                    state.run_history.push(state.code.pos)
+                    state.run_history_pos++
+
                     let command = state.code.parsed[state.code.pos]
 
                     if(command.type == "call") {
                         let err = try_call(command.id)
                         if(!err) {
-                            if(state.call_history_pos < state.call_history.length) {
-                                state.call_history.length = state.call_history_pos
-                            }
-                            state.call_history.push({
-                                command: command,
-                                line: state.code.pos
-                            })
-                            state.call_history_pos++
-                            if(command.hasOwnProperty("next")) {
-                                state.code.pos = command.next
-                            }
-                            else {
-                                state.code.pos++
-                            }
-                            style_code(state.code.pos)
+                            state.code.pos++
                         }
                     }
                     else if(command.type == "if" || command.type == "while") {
@@ -244,7 +240,7 @@
                     refresh()
                 }
                 function run_back() {
-                    if(state.call_history_pos == 0) {
+                    if(state.run_history_pos == 0) {
                         // this seems like an ugly hack
                         // for the specific case when you have a conditional check at the start of the program
                         // TODO maybe??? put checks in the call history?
@@ -254,18 +250,19 @@
                         run_pause()
                         return
                     }
-                    let call = state.call_history[--state.call_history_pos]
-                    if(call.command.type == "call") {
-                        try_undo(call.command.id)
+                    let line = state.run_history[--state.run_history_pos]
+                    let command = state.code.parsed[line]
+                    if(command.type == "call") {
+                        try_undo(command.id)
                     }
-                    state.code.pos = call.line
+                    state.code.pos = line
                     refresh()
                 }
                 function run_rewind() {
-                    while(state.call_history_pos > 0) {
+                    while(state.run_history_pos > 0) {
                         run_back()
                     }
-                    // needed since checks are not in the call history
+                    // needed since checks are not in the call history?
                     state.code.pos = 0
                     refresh()
                 }
@@ -581,12 +578,12 @@
                 if(tab == "history") {
                     ta.value = state.render_history()
                 }
+                else if(tab == "code" && state.code_styled) {
+                    style_code(state.code.pos)
+                }
                 draw_grid()
                 draw_karel()
                 
-                if(state.code_styled) {
-                    style_code(state.code.pos)
-                }
             }
             function load_all_images() {
                 var counter = 0
