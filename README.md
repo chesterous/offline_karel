@@ -6,6 +6,13 @@ Provides an IDE for editing and running Karel code, but is completely contained 
 
 Students in Stanford Code in Place, prior to learning Python, learn a Python-like variant of Karel programming using online resources. This project tries to replicate most of the functionality of those resources, but does not require an internet connection and can be run locally.
 
+## TODO
+* Features needing implementation
+    * if/else
+    * for
+    * function calls with recursion
+    
+
 ## Version History
 * 0.4
     * support for while and if and most conditionals
