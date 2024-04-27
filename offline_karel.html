@@ -162,7 +162,9 @@
                          "\n>" + h.slice(state.call_history_pos).join("\n ")
                 }
                 function run_forward() {
-                    if(state.code.pos >= state.code.parsed.length) {
+                    // there is always a noop code at the end
+                    if(state.code.pos >= state.code.parsed.length - 1) {
+                        state.code.pos = state.code.parsed.length - 1
                         run_pause()
                         return
                     }
@@ -222,9 +224,6 @@
                         try_undo(call.command.id)
                     }
                     state.code.pos = call.line
-                    if(state.code_styled) {
-                        style_code(0)
-                    }
                     refresh()
                 }
                 function run_rewind() {
@@ -232,9 +231,6 @@
                         run_back()
                     }
                     // state.code.pos = 0
-                    if(state.code_styled) {
-                        style_code(0)
-                    }
                     refresh()
                 }
                 function run_fast_forward() {
@@ -245,6 +241,7 @@
                 }
                 function run_play() {
                     state.timer = setInterval(run_forward, 500)
+                    style_code(state.code.pos)
                 }
                 function run_play_back() {
                     state.timer = setInterval(run_back, 500)
@@ -553,6 +550,10 @@
                 }
                 draw_grid()
                 draw_karel()
+                
+                if(state.code_styled) {
+                    style_code(state.code.pos)
+                }
             }
             function load_all_images() {
                 var counter = 3
@@ -667,16 +668,17 @@
                 document.getElementById("ta1").value = res.join("\n")
                 state.code_styled = true
             }
-            function check_syntax() {
+            function toggle_check_syntax() {
                 let tab = document.getElementById("id_title").value
                 if(tab != "code") {
                     return
                 }
                 if(state.code_styled) {
                     document.getElementById("ta1").value = state.code.unparsed.join("\n")
+                    state.code_styled = false
                 }
                 else {
-                    style_code()
+                    style_code(state.code.pos)
                 }
             }
             function unstyle_code() {
@@ -695,13 +697,23 @@
                 if(tab == "code") {
                     // state.reset()
 
-                    // require it end in newline
-                    // (one reason is for a required noop when needing to loop back for a while loop)
+                    // CODE "CLEANING"
                     let lines = ta.value.split("\n")
-                    if(lines[lines.length - 1].trim() != "") {
-                        lines.push("")
-                        ta.value = lines.join("\n")
+                    // set indentation of blank lines to be the same as last line
+                    for(let i = 1; i < lines.length; i++) {
+                        if(lines[i].trim() == "") {
+                            let j
+                            for(j = 0; j < lines[i-1].length && lines[i-1].charAt(j) == " "; j++);
+                            lines[i] = lines[i-1].substring(0, j)
+                        }
                     }
+                    // require it end in newline at base indentation level
+                    // (one reason is for a required noop when needing to loop back for a while loop)
+                    if(lines[lines.length - 1].trim() == "") {
+                        lines.length = lines.length - 1
+                    }
+                    lines.push("")
+                    ta.value = lines.join("\n")
                     state.code.load(ta.value)
                 }
             }
@@ -727,7 +739,7 @@
           <button id="put_button" onclick='execute_call("put_beeper")'>put_beeper</button>
           <button id="pick_button" onclick='execute_call("pick_beeper")'>pick_beeper</button>
           <button id="reset_button" onclick='state.restore_state()'>reset state to code</button>
-          <button id="syntax_button" onclick='check_syntax()'>check syntax</button>
+          <button id="syntax_button" onclick='toggle_check_syntax()'>check syntax</button>
           <button id="rewind_button" onclick='state.controls.rewind()'>&lt;&lt;</button>
           <button id="play_back_button" onclick='state.controls.play_back()'>&lt;=</button>
           <button id="back_button" onclick="state.controls.back()">&lt;</button>
