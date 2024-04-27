@@ -125,7 +125,8 @@
                         timer: null,
                         timer_f: null,
                         pos: 0,
-                        load: load_code
+                        load: load_code,
+                        stack: []
                     },
                     controls: {
                         play: run_play,
@@ -204,7 +205,10 @@
                     // TODO: this might push errored stuff into the history
                     // that doesn't actually execute, not sure if htat's good or bad
                     state.run_history.splice(state.run_history_pos + 1) // maybe not necessary, was for playground
-                    state.run_history.push(state.code.pos)
+                    state.run_history.push({
+                        pos: state.code.pos,
+                        stack: JSON.stringify(state.code.stack)
+                    })
                     state.run_history_pos++
 
                     let command = state.code.parsed[state.code.pos]
@@ -218,6 +222,7 @@
                     else if(command.type == "if" || command.type == "while") {
                         let res = try_test(command.test)
                         if(res) {
+                            state.code.stack.push(state.code.pos)
                             state.code.pos++
                             style_code(state.code.pos)
                         }
@@ -230,15 +235,21 @@
                         // skip over both errors and empty lines
                         state.code.pos++
                     }
-                    // jumps (while loop return)
-                    if(state.code.pos < state.code.parsed.length && command.type != "while") {
-                        let next_command = state.code.parsed[state.code.pos]
-                        if(next_command.hasOwnProperty("next")) {
-                            state.code.pos = next_command.next
+                    // whiles jump back to check
+                    let next_command = state.code.parsed[state.code.pos]
+                    if(state.code.stack.length > next_command.indent + 1) {
+                        console.log("bones")
+                        let last_line = state.code.stack[state.code.stack.length - 1]
+                        let last_command = state.code.parsed[last_line]
+                        state.code.stack.pop()
+                        if(last_command.type == "while") {
+                            state.code.pos = last_line
                         }
                     }
                     refresh()
                 }
+                // TODO: change other code with run forward not being actually execute
+                // since that functionality has been removed
                 function run_back() {
                     if(state.run_history_pos == 0) {
                         // this seems like an ugly hack
@@ -250,12 +261,13 @@
                         run_pause()
                         return
                     }
-                    let line = state.run_history[--state.run_history_pos]
-                    let command = state.code.parsed[line]
+                    let stuff = state.run_history[--state.run_history_pos]
+                    let command = state.code.parsed[stuff.pos]
                     if(command.type == "call") {
                         try_undo(command.id)
                     }
-                    state.code.pos = line
+                    state.code.pos = stuff.pos
+                    state.code.stack = JSON.parse(stuff.stack)
                     refresh()
                 }
                 function run_rewind() {
@@ -288,7 +300,7 @@
                     }
                 }
                 function parse() {
-                    let required_jumps = state.code.unparsed.map((line) => -1)
+                    // changed from jumps to stack implementation
                     let spaces = state.code.unparsed.map((line) => {
                         let sps = 0
                         while(sps < line.length && line[sps] == " ") {
@@ -296,6 +308,21 @@
                         }
                         return sps
                     })
+                    let indents = []
+                    let indent_stack = [0]
+                    // todo: make sure code is indented back to margin if it isn't already
+                    // maybe do this after code is edited  in field by user
+                    for(let i = 0; i < spaces.length; i++) {
+                        if(spaces[i] > indent_stack[indent_stack.length - 1]) {
+                            indent_stack.push(spaces[i])
+                        }
+                        else if(indent_stack.length > 1) {
+                            while(spaces[i] <= indent_stack[indent_stack.length - 2]) {
+                                indent_stack.pop()
+                            }
+                        }
+                        indents[i] = indent_stack.length - 1
+                    }
                     function find_block_end(start) {
                         let res
                         for(res = start + 1; res < spaces.length && spaces[res] > spaces[start]; res++);
@@ -326,7 +353,6 @@
                             test = line.substring(6, line.length - 3)
                             if(constants.conditions[test]) {
                                 res = {type: "while", test: test, end: find_block_end(i)}
-                                required_jumps[res.end] = i
                             }
                             else {
                                 res = {type: "error"}
@@ -338,9 +364,7 @@
                         else {
                             res = {type: "error"}
                         }
-                        if(required_jumps[i] != -1) {
-                            res["next"] = required_jumps[i]
-                        }
+                        res["indent"] = indents[i]
                         state.code.parsed.push(res)
                     }
                 }

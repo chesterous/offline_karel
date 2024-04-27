@@ -15,11 +15,12 @@ This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 
     * function calls with recursion
 * Possible future of development
     * stackless version that doesn't support for but supports function calls without recursion by inlining all functions
-    * add a stack to allow for loops and function calls with recursion
     * also, as code length is approaching 1,000 lines, might break into multiple files in github, and then just join them together for a release
 
 ## Version History
 * 0.5
+    * switched to generalized stack implementation
+    * stack used for  function calls as well as if/while/etc
     * can change styles and speed of playback
     * have separate playground mode for just calling core functions
 * 0.4
