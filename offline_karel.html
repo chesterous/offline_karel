@@ -182,8 +182,8 @@
                     }
                 }
                 function render_history() {
-                    let h = state.run_history.map((line) => {
-                        return history_string(state.code.parsed[line])
+                    let h = state.run_history.map((stuff) => {
+                        return history_string(state.code.parsed[stuff.pos])
                     })
                     return " " + h.slice(0, state.run_history_pos).join("\n ") +
                          "\n>" + h.slice(state.run_history_pos).join("\n ")
