@@ -12,12 +12,14 @@ This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 
 
 ## TODO
 * Bug fixes
+    * bug on line 320, will try to fix later
+    * seems to get into a state where correctness markers for code get into line strings
+    * maybe when pausing in debugger or something... might fix to make this state impossible
     * if code gets into a broken state, it starts behaving weirdly
     * maybe handle broken code better (just don't run error code?)
 * Features needing implementation
     * user ability to resize grid
     * maybe load in the problems from code in place (like karel helper)
-    * function calls with recursion
 * Architecture changes
     * break into multiple files and just merge for a release
     * better encapsulation, for example, playing code forward/back/etc in an encapsulated unit
@@ -25,6 +27,9 @@ This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 
     * stackless version that doesn't support for but supports function calls without recursion by inlining all functions
 
 ## Version History
+* 1.0
+    * function calls sort of maybe work
+    * but this code is ugly and probably bug-ridden
 * 0.5
     * added support for else statements and for
     * switched to generalized stack implementation
