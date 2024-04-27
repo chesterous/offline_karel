@@ -89,7 +89,6 @@
                     "reset_button"
                 ],
                 code_buttons: [
-                    "syntax_button",
                     "rewind_button",
                     "play_back_button",
                     "back_button",
@@ -126,7 +125,8 @@
                         timer_f: null,
                         pos: 0,
                         load: load_code,
-                        stack: []
+                        stack: [],
+                        vars: {}
                     },
                     controls: {
                         play: run_play,
@@ -219,6 +219,20 @@
                             state.code.pos++
                         }
                     }
+                    else if(command.type == "for") {
+                        if(!state.code.vars.hasOwnProperty(command.var)) {
+                            state.code.vars[command.var] = command.count
+                        }
+                        state.code.vars[command.var]--
+                        if(state.code.vars[command.var] < 0) {
+                            delete state.code.vars[command.var]
+                            state.code.pos = command.end
+                        }
+                        else {
+                            state.code.stack.push(state.code.pos)
+                            state.code.pos++
+                        }
+                    }
                     else if(command.type == "if" || command.type == "while") {
                         let res = try_test(command.test)
                         if(res) {
@@ -241,11 +255,10 @@
                     // whiles jump back to check
                     let next_command = state.code.parsed[state.code.pos]
                     if(state.code.stack.length > next_command.indent) {
-                        console.log("bones")
                         let last_line = state.code.stack[state.code.stack.length - 1]
                         let last_command = state.code.parsed[last_line]
                         state.code.stack.pop()
-                        if(last_command.type == "while") {
+                        if(last_command.type == "while" || last_command.type == "for") {
                             state.code.pos = last_line
                         }
                         else if(last_command.type == "if") {
@@ -360,6 +373,18 @@
                         }
                         else if(line.startsWith("else")) {
                             res = {type: "else", end: find_block_end(i)}
+                        }
+                        else if(line.startsWith("for ")) {
+                            let words = line.split(" ")
+                            if(words.length == 4 && words[3].length >= 9) {
+                                let num_string = (words[3]).substring(6, words[3].length - 2)
+                                let count = parseInt(num_string)
+                                res = {type: "for", var: words[1], count: count, end: find_block_end(i)}
+                            }
+                            else {
+                                res = {type: "error"}
+                            }
+                            console.log("forrr")
                         }
                         else if(line.startsWith("while ")) {
                             test = line.substring(6, line.length - 3)
@@ -742,19 +767,6 @@
                 document.getElementById("ta1").value = res.join("\n")
                 state.code_styled = true
             }
-            function toggle_check_syntax() {
-                let tab = document.getElementById("id_title").value
-                if(tab != "code") {
-                    return
-                }
-                if(state.code_styled) {
-                    document.getElementById("ta1").value = state.code.unparsed.join("\n")
-                    state.code_styled = false
-                }
-                else {
-                    style_code(state.code.pos)
-                }
-            }
             function unstyle_code() {
                 if(state.code_styled) {
                     let ta = document.getElementById("ta1")
@@ -806,11 +818,17 @@
                     state.timer = setInterval(state.timer_f, timeout_ms)
                 }
             }
+            function blurs() {
+                let tab = document.getElementById("id_title").value
+                if(tab == "code") {
+                    style_code()
+                }
+            }
         </script>
         <table id="tab1" style="width:100%;height:100%">
             <tr>
                 <td id="td1" width="16%">
-                    <textarea id="ta1" style="width:100%;height:100%" onfocus="edit_code()" onchange="change_code()"></textarea>
+                    <textarea id="ta1" style="width:100%;height:100%" onblur="blurs()" onfocus="edit_code()" onchange="change_code()"></textarea>
                 </td>
                 <td>
                     <canvas id="canv1" width="900" height="360" style="width:100%;height:100%;border:2px solid #000000;"></canvas>
@@ -828,7 +846,6 @@
           <button id="put_button" onclick='execute_call("put_beeper")'>put_beeper</button>
           <button id="pick_button" onclick='execute_call("pick_beeper")'>pick_beeper</button>
           <button id="reset_button" onclick='state.restore_state()'>reset state to code</button>
-          <button id="syntax_button" onclick='toggle_check_syntax()'>check syntax</button>
           <button id="rewind_button" onclick='state.controls.pause();state.controls.rewind()'>&lt;&lt;</button>
           <button id="play_back_button" onclick='state.controls.pause();state.controls.play_back()'>&lt;=</button>
           <button id="back_button" onclick="state.controls.pause();state.controls.back()">&lt;</button>

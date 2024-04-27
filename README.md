@@ -10,7 +10,6 @@ This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 
 
 ## TODO
 * Features needing implementation
-    * for
     * function calls with recursion
 * Possible future of development
     * stackless version that doesn't support for but supports function calls without recursion by inlining all functions
@@ -18,8 +17,9 @@ This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 
 
 ## Version History
 * 0.5
+    * added support for else statements and for
     * switched to generalized stack implementation
-    * stack used for  function calls as well as if/while/etc
+    * stack used for  function calls as well as if/while/for
     * can change styles and speed of playback
     * have separate playground mode for just calling core functions
 * 0.4
