@@ -6,14 +6,22 @@ Provides an IDE for editing and running Karel code, but is completely contained 
 
 Students in Stanford Code in Place, prior to learning Python, learn a Python-like variant of Karel programming using online resources. This project tries to replicate most of the functionality of those resources, but does not require an internet connection and can be run locally.
 
+This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 1,000 lines of code. Attempted to encapsulate with objects like a "state" object, etc. But those efforts may have actually made it more complex. Might restructure everything at some future date.
+
 ## TODO
 * Features needing implementation
     * if/else
     * for
     * function calls with recursion
-    
+* Possible future of development
+    * stackless version that doesn't support for but supports function calls without recursion by inlining all functions
+    * add a stack to allow for loops and function calls with recursion
+    * also, as code length is approaching 1,000 lines, might break into multiple files in github, and then just join them together for a release
 
 ## Version History
+* 0.5
+    * can change styles and speed of playback
+    * have separate playground mode for just calling core functions
 * 0.4
     * support for while and if and most conditionals
     * conditionals not tested, may contain obvious bugs

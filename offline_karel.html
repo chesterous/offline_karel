@@ -22,7 +22,7 @@
                     karel: new Image(),
                     imgw: 40,
                     imgh: 40,
-                    bg: '#FDC'
+                    bg: '#FDB'
                 },
                 "frog": {
                     empty_img: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAABhWlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw1AUhU/TiiIVEYuIOmSoTnZREcdSxSJYKG2FVh1MXvoHTRqSFBdHwbXg4M9i1cHFWVcHV0EQ/AFxdnBSdJES70sKLWK88Hgf591zeO8+QGhUmGoGooCqWUYqHhOzuVWx+xUBjMKHIQxIzNQT6cUMPOvrnjqp7iI8y7vvz+pT8iYDfCJxlOmGRbxBPLtp6Zz3iUOsJCnE58STBl2Q+JHrsstvnIsOCzwzZGRS88QhYrHYwXIHs5KhEs8QhxVVo3wh67LCeYuzWqmx1j35C4N5bSXNdVpjiGMJCSQhQkYNZVRgIUK7RoqJFJ3HPPwjjj9JLplcZTByLKAKFZLjB/+D37M1C9NTblIwBnS92PbHONC9CzTrtv19bNvNE8D/DFxpbX+1Acx9kl5va+EjoH8buLhua/IecLkDDD/pkiE5kp+WUCgA72f0TTlg8BboXXPn1jrH6QOQoVkt3wAHh8BEkbLXPd7d0zm3f3ta8/sBb1lypWgHKyMAAAAGYktHRAD/AP8A/6C9p5MAAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfoBBsBGjNKZLTrAAAAGXRFWHRDb21tZW50AENyZWF0ZWQgd2l0aCBHSU1QV4EOFwAAADhJREFUSMft0bEJADAMA0GRiTxKxsrWcpMylVMYzB+oFkISAAAA8OCbklUtta04Wz/lLYv5mI/nSQ8KFAP/WXxQAAAAAElFTkSuQmCC',
@@ -33,7 +33,7 @@
                     karel: new Image(),
                     imgw: 34,
                     imgh: 34,
-                    bg: '#FFF'
+                    bg: '#DEF'
                 },
                 "monkey": {
                     empty_img: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAFiUAABYlAUlSJPAAAAB3SURBVChTY/wPBAxEABSFjIyMUBYEIJsBVwhSdCPAAiwIAxobTiAUQxX+Byr6/6OjAMwGYRAbJAZV8h+uEKYIBtDFmIAMCPCQgDKQAJIYQqGGBsOPCx1gt4IwiA0SgwOwuUAAYv74sQHK+w9mI0n/Jz148AMGBgCKC3d6FXE2lQAAAABJRU5ErkJggg==',
@@ -44,7 +44,7 @@
                     karel: new Image(),
                     imgw: 25,
                     imgh: 25,
-                    bg: '#FDD'
+                    bg: '#FFF'
                 }
             }
             // set the default to the first style
@@ -381,11 +381,8 @@
                 ctx.restore()
             }
             function draw_grid() {
-                // TODO: maybe set it once on style change?
-                ctx.fillStyle = style.bg
-                canv.width = style.imgw * cols
-                canv.height = style.imgh * rows
-                ctx.fillRect(0, 0, constants.imgw * cols, constants.boxh * rows)
+                ctx.fillStyle = style.bg // maybe move to when style changes or something
+                ctx.fillRect(0, 0, canv.width, canv.height)
                 for(let row = 0; row < rows; row++) {
                     for(let col = 0; col < cols; col++) {
                         if(state.grid[row][col] == 0) draw(style.empty, col, row)
@@ -640,6 +637,7 @@
                 load_all_images()
                 change_tab()
                 change_fps()
+                change_style()
             }
             function change_tab() {
                 let old_state
@@ -762,6 +760,10 @@
             }
             function change_style() {
                 style = styles[document.getElementById("style_switcher").value]
+                // TODO: maybe set it once on style change?
+                canv.width = style.imgw * cols
+                canv.height = style.imgh * rows
+                ctx.fillStyle = style.bg
                 refresh()
             }
             function change_fps() {
