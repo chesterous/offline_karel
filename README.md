@@ -9,11 +9,16 @@ Students in Stanford Code in Place, prior to learning Python, learn a Python-lik
 This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 1,000 lines of code. Attempted to encapsulate with objects like a "state" object, etc. But those efforts may have actually made it more complex. Might restructure everything at some future date.
 
 ## TODO
+* Bug fixes
+    * if code gets into a broken state, it starts behaving weirdly
+    * maybe handle broken code better (just don't run error code?)
 * Features needing implementation
     * function calls with recursion
+* Architecture changes
+    * break into multiple files and just merge for a release
+    * better encapsulation, for example, playing code forward/back/etc in an encapsulated unit
 * Possible future of development
     * stackless version that doesn't support for but supports function calls without recursion by inlining all functions
-    * also, as code length is approaching 1,000 lines, might break into multiple files in github, and then just join them together for a release
 
 ## Version History
 * 0.5
