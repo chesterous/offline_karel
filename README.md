@@ -10,6 +10,12 @@ Students in Stanford Code in Place, prior to learning Python, learn a Python-lik
 
 This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 1,000 lines of code. Attempted to encapsulate with objects like a "state" object, etc. But those efforts may have actually made it more complex. Might restructure everything at some future date.
 
+## Contact Me
+
+People wanting to help out, or suggest things, or whatever, can create an account on coproductional. I'll eventually setup an account there. I didn't put any contact info here because I assumed there was some way to contact people on github. That appears to not be the case. Coproductional is supposed to have more people eventually. I don't know. But you can try anyway and post something on it, I guess. I'll get around to doing something on there related to programming, maybe? Or maybe check back here later. I may eventually create a website or put some other contact info here.
+
+* [Coproductional social media](https://coproductional.com/)
+
 ## Introduction
 
 Some features:
