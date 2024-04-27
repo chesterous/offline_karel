@@ -10,6 +10,8 @@ Students in Stanford Code in Place, prior to learning Python, learn a Python-lik
 
 This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 1,000 lines of code. Attempted to encapsulate with objects like a "state" object, etc. But those efforts may have actually made it more complex. Might restructure everything at some future date.
 
+![offline_karel_tutorial](https://github.com/chesterous/offline_karel/assets/164004822/15cb6636-28a5-48ca-b8d4-46d4d0931cad)
+
 ## TODO
 * Bug fixes
     * bug on line 320, will try to fix later
