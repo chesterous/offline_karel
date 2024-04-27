@@ -207,7 +207,8 @@
                     state.run_history.splice(state.run_history_pos + 1) // maybe not necessary, was for playground
                     state.run_history.push({
                         pos: state.code.pos,
-                        stack: JSON.stringify(state.code.stack)
+                        stack: JSON.stringify(state.code.stack),
+                        vars: JSON.stringify(state.code.vars)
                     })
                     state.run_history_pos++
 
@@ -290,6 +291,7 @@
                     }
                     state.code.pos = stuff.pos
                     state.code.stack = JSON.parse(stuff.stack)
+                    state.code.vars = JSON.parse(stuff.vars)
                     refresh()
                 }
                 function run_rewind() {
