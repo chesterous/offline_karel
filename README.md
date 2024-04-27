@@ -2,13 +2,25 @@
 
 Provides an IDE for editing and running Karel code, but is completely contained in a single HTML file.
 
-Originally started with the idea of it being used (unofficially by interested students and SLs) in code in place 2024, but might not complete it in time.
+Originally started with the idea of it being useful for people in Code in Place 2024.
 
 ## Description
 
 Students in Stanford Code in Place, prior to learning Python, learn a Python-like variant of Karel programming using online resources. This project tries to replicate most of the functionality of those resources, but does not require an internet connection and can be run locally.
 
 This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 1,000 lines of code. Attempted to encapsulate with objects like a "state" object, etc. But those efforts may have actually made it more complex. Might restructure everything at some future date.
+
+## Introduction
+
+Some features:
+
+* Like the official editor, can play code forwards and backwards
+   * controls are: "rewind", "play in reverse", "step back", "pause", "step forward", "play", "fast forward"
+   * includes speed control for playing code forward and reverse
+* Has a "playground" mode for just executing single commands
+* Can click the field to add or remove beepers
+* Has different styles to choose from
+   * all suspiciously similar to a Super Nintendo game, however
 
 ![offline_karel_tutorial](https://github.com/chesterous/offline_karel/assets/164004822/15cb6636-28a5-48ca-b8d4-46d4d0931cad)
 
@@ -21,7 +33,16 @@ This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 
     * maybe handle broken code better (just don't run error code?)
 * Features needing implementation
     * user ability to resize grid
+    * forgot to add a count if there are multiple beepers on a square
     * maybe load in the problems from code in place (like karel helper)
+    * probably make it more resilient by giving error messages or something
+    * syntax highlighting might be nice...
+       * but would have to change the textarea-style implementation
+       * so, not sure if it's worth it
+    * maybe implement the bag functions? (not sure if deprecated)
+       * i.e. beepers_in_bag() and no_beepers_in_bag()
+    * corner functions WON'T be implemented, since they seem deprecated
+       *  i.e. paint_corner(COLOR_NAME) and corner_color_is(COLOR_NAME)
 * Architecture changes
     * break into multiple files and just merge for a release
     * better encapsulation, for example, playing code forward/back/etc in an encapsulated unit
@@ -76,4 +97,6 @@ This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 
 
 * [Code in Place](https://codeinplace.stanford.edu/)
 * [Intro to the Karel variant](https://compedu.stanford.edu/karel-reader/docs/python/en/intro.html)
+
+(corner color functions seem to be deprecated)
 
