@@ -49,18 +49,8 @@
             }
             // set the default to the first style
             let style = styles[Object.keys(styles)[0]]
+            let timeout_ms = 500
             const constants = {
-                //  maybe just make it the style's pixels
-                // // canvas pixels per square
-                // boxw: 60,
-                // boxh: 60,
-                // // base 64 encoded images
-                // empty_img: styles[cur_style].empty_img,
-                // beeper_img: styles[cur_style].beeper_img,
-                // karel_img: styles[cur_style].karel_img,
-                // // the dimensions of the images (when rendering, images centered within a box of this size)
-                // imgw: styles[cur_style].imgw,
-                // imgh: styles[cur_style].imgh,
                 // directions
                 right: 0,
                 down: 1,
@@ -118,11 +108,6 @@
                 grid_string: JSON.stringify(Array(rows).fill(Array(cols).fill(0)))
             }
             var canv, ctx
-            // var images = {
-            //     empty: new Image(),
-            //     beeper: new Image(),
-            //     karel: new Image()
-            // }
             function setup_state() {
                 let state = {
                     grid: JSON.parse(initial_state.grid_string),
@@ -138,6 +123,7 @@
                         unparsed: [],
                         parsed: [],
                         timer: null,
+                        timer_f: null,
                         pos: 0,
                         load: load_code
                     },
@@ -200,6 +186,11 @@
                          "\n>" + h.slice(state.call_history_pos).join("\n ")
                 }
                 function run_forward() {
+                    // not sure if this can happen.
+                    if(state.code.parsed.length == 0) {
+                        error("SOMEHOW RUNNING BEFORE CODE PROPERLY PARSED")
+                        return
+                    }
                     // there is always a noop code at the end
                     if(state.code.pos >= state.code.parsed.length - 1) {
                         state.code.pos = state.code.parsed.length - 1
@@ -254,6 +245,12 @@
                 }
                 function run_back() {
                     if(state.call_history_pos == 0) {
+                        // this seems like an ugly hack
+                        // for the specific case when you have a conditional check at the start of the program
+                        // TODO maybe??? put checks in the call history?
+                        // next two lines may be a hack
+                        state.code.pos = 0
+                        refresh() // to show current code position
                         run_pause()
                         return
                     }
@@ -268,7 +265,8 @@
                     while(state.call_history_pos > 0) {
                         run_back()
                     }
-                    // state.code.pos = 0
+                    // needed since checks are not in the call history
+                    state.code.pos = 0
                     refresh()
                 }
                 function run_fast_forward() {
@@ -278,14 +276,19 @@
                     refresh()
                 }
                 function run_play() {
-                    state.timer = setInterval(run_forward, 500)
+                    state.timer_f = run_forward
+                    state.timer = setInterval(run_forward, timeout_ms)
                     style_code(state.code.pos)
                 }
                 function run_play_back() {
-                    state.timer = setInterval(run_back, 500)
+                    state.timer_f = run_back
+                    state.timer = setInterval(run_back, timeout_ms)
                 }
                 function run_pause() {
-                    clearInterval(state.timer)
+                    if(state.timer_f) {
+                        state.timer_f = null
+                        clearInterval(state.timer)
+                    }
                 }
                 function parse() {
                     let required_jumps = state.code.unparsed.map((line) => -1)
@@ -353,6 +356,7 @@
             var state = setup_state()
             function error(msg) {
                 console.log("ERROR - " + msg)
+                state.timer_f = null
                 clearInterval(state.timer)
             }
             function draw(img, col, row, dir = constants.right) {
@@ -368,16 +372,6 @@
                 else {
                     angle = 0;
                 }
-                // if(constants.boxw / style.imgw > constants.boxh / style.imgh) {
-                //     ratio = constants.boxh / style.imgh
-                // }
-                // else {
-                //     ratio = constants.boxw / constants.imgw
-                // }
-                
-                // let dx = -img.width * ratio / 2
-                // let dy = -img.height * ratio / 2
-
                 ctx.save()
                 ctx.translate(style.imgw * (col + .5), style.imgh * (row + .5))
                 ctx.rotate(angle)
@@ -450,7 +444,7 @@
             }
             function try_call(id) {
                 if(id == "move") {
-                    if(!front_is_clear) {
+                    if(!front_is_clear()) {
                         error("FRONT IS NOT CLEAR")
                         return true
                     }
@@ -645,6 +639,7 @@
 
                 load_all_images()
                 change_tab()
+                change_fps()
             }
             function change_tab() {
                 let old_state
@@ -769,6 +764,13 @@
                 style = styles[document.getElementById("style_switcher").value]
                 refresh()
             }
+            function change_fps() {
+                timeout_ms = 10000 / document.getElementById("fps_field").value
+                if(state.timer_f) {
+                    clearInterval(state.timer)
+                    state.timer = setInterval(state.timer_f, timeout_ms)
+                }
+            }
         </script>
         <table id="tab1" style="width:100%;height:100%">
             <tr>
@@ -792,12 +794,14 @@
           <button id="pick_button" onclick='execute_call("pick_beeper")'>pick_beeper</button>
           <button id="reset_button" onclick='state.restore_state()'>reset state to code</button>
           <button id="syntax_button" onclick='toggle_check_syntax()'>check syntax</button>
-          <button id="rewind_button" onclick='state.controls.rewind()'>&lt;&lt;</button>
-          <button id="play_back_button" onclick='state.controls.play_back()'>&lt;=</button>
-          <button id="back_button" onclick="state.controls.back()">&lt;</button>
-          <button id="forward_button" onclick="state.controls.forward()">&gt;</button>
-          <button id="play_button" onclick='state.controls.play()'>=&gt;</button>
-          <button id="fast_forward_button" onclick='state.controls.fast_forward()'>&gt;&gt;</button>
+          <button id="rewind_button" onclick='state.controls.pause();state.controls.rewind()'>&lt;&lt;</button>
+          <button id="play_back_button" onclick='state.controls.pause();state.controls.play_back()'>&lt;=</button>
+          <button id="back_button" onclick="state.controls.pause();state.controls.back()">&lt;</button>
+          <button id="forward_button" onclick="state.controls.pause();state.controls.forward()">&gt;</button>
+          <button id="play_button" onclick='state.controls.pause();state.controls.play()'>=&gt;</button>
+          <button id="fast_forward_button" onclick='state.controls.pause();state.controls.fast_forward()'>&gt;&gt;</button>
           <select name="style_switcher" id="style_switcher" onchange="change_style()"></select>
+          <label for="fps_field">FPS</label>
+          <input type="number" id="fps_field" name="fps_field" onchange="change_fps()" min="1" max="1000" value="10" />
     </body>
 </html>
