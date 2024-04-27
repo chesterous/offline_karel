@@ -204,7 +204,7 @@
 
                     // TODO: this might push errored stuff into the history
                     // that doesn't actually execute, not sure if htat's good or bad
-                    state.run_history.splice(state.run_history_pos + 1) // maybe not necessary, was for playground
+                    state.run_history.splice(state.run_history_pos) // maybe not necessary, was for playground
                     state.run_history.push({
                         pos: state.code.pos,
                         stack: JSON.stringify(state.code.stack),
