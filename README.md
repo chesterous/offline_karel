@@ -2,6 +2,8 @@
 
 Provides an IDE for editing and running Karel code, but is completely contained in a single HTML file.
 
+Originally started with the idea of it being used (unofficially by interested students and SLs) in code in place 2024, but might not complete it in time.
+
 ## Description
 
 Students in Stanford Code in Place, prior to learning Python, learn a Python-like variant of Karel programming using online resources. This project tries to replicate most of the functionality of those resources, but does not require an internet connection and can be run locally.
@@ -13,6 +15,8 @@ This is getting somewhat unweildly? Weildy? Wieldy? The one file is approaching 
     * if code gets into a broken state, it starts behaving weirdly
     * maybe handle broken code better (just don't run error code?)
 * Features needing implementation
+    * user ability to resize grid
+    * maybe load in the problems from code in place (like karel helper)
     * function calls with recursion
 * Architecture changes
     * break into multiple files and just merge for a release

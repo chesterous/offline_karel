@@ -144,6 +144,17 @@
                         state.kdir = initial_state.kdir
                         refresh()
                     },
+                    reset_state: () => {
+                        state.reset_karel()
+                        // state.grid = JSON.parse(initial_state.grid_string)
+                        state.run_history = []
+                        state.run_history_pos = 0
+                        state.code.timer = null
+                        state.code.timer_f = null
+                        state.code.pos = 0
+                        state.code.stack = []
+                        state.code.vars = {}
+                    },
                     backup_state: () => {
                         state.backup = [
                             JSON.stringify(state.grid),
@@ -192,14 +203,14 @@
                     // not sure if this can happen.
                     if(state.code.parsed.length == 0) {
                         error("SOMEHOW RUNNING BEFORE CODE PROPERLY PARSED")
-                        return
+                        return true
                     }
                     
                     // there is always a noop code at the end
                     if(state.code.pos >= state.code.parsed.length - 1) {
                         state.code.pos = state.code.parsed.length - 1
                         run_pause()
-                        return
+                        return true
                     }
 
                     // TODO: this might push errored stuff into the history
@@ -270,6 +281,7 @@
                     }
                     style_code(state.code.pos)
                     refresh()
+                    return false
                 }
                 // TODO: change other code with run forward not being actually execute
                 // since that functionality has been removed
@@ -303,24 +315,29 @@
                     refresh()
                 }
                 function run_fast_forward() {
-                    for(let limit = 1000; limit > 0; limit--) {
-                        run_forward()
+                    for(let limit = 10000; limit > 0; limit--) {
+                        if(run_forward()) break
                     }
                     refresh()
                 }
                 function run_play() {
+                    state.reset_state()
+
                     state.timer_f = run_forward
                     state.timer = setInterval(run_forward, timeout_ms)
+                    document.getElementById("pause_button").disabled = false
                     style_code(state.code.pos)
                 }
                 function run_play_back() {
                     state.timer_f = run_back
                     state.timer = setInterval(run_back, timeout_ms)
+                    document.getElementById("pause_button").disabled = false
                 }
                 function run_pause() {
                     if(state.timer_f) {
                         state.timer_f = null
                         clearInterval(state.timer)
+                        document.getElementById("pause_button").disabled = true
                     }
                 }
                 function parse() {
@@ -803,6 +820,9 @@
                     lines.push("")
                     ta.value = lines.join("\n")
                     state.code.load(ta.value)
+
+                    // TODO maybe if it's worth it, allow modifying code while retaining state
+                    state.reset_state()
                 }
             }
             function change_style() {
@@ -851,6 +871,7 @@
           <button id="rewind_button" onclick='state.controls.pause();state.controls.rewind()'>&lt;&lt;</button>
           <button id="play_back_button" onclick='state.controls.pause();state.controls.play_back()'>&lt;=</button>
           <button id="back_button" onclick="state.controls.pause();state.controls.back()">&lt;</button>
+          <button id="pause_button" onclick="state.controls.pause()" disabled="true">||</button>
           <button id="forward_button" onclick="state.controls.pause();state.controls.forward()">&gt;</button>
           <button id="play_button" onclick='state.controls.pause();state.controls.play()'>=&gt;</button>
           <button id="fast_forward_button" onclick='state.controls.pause();state.controls.fast_forward()'>&gt;&gt;</button>
