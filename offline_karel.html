@@ -100,12 +100,12 @@
             // dimensions of the world
             let cols = 15
             let rows = 6
-            let initial_state = {
+            let initial_field = JSON.stringify({
                 kcol: 0,
                 krow: rows - 1,
                 kdir: constants.right,
-                grid_string: JSON.stringify(Array(rows).fill(Array(cols).fill(0)))
-            }
+                grid: Array(rows).fill(Array(cols).fill(0))
+            })
             var canv, ctx
             function setup_state() {
                 function push_code_stack(line) {
@@ -131,10 +131,6 @@
                     return state.code.indent_stack[state.code.indent_stack.length - 1]
                 }
                 let state = {
-                    grid: JSON.parse(initial_state.grid_string),
-                    krow: initial_state.krow,
-                    kcol: initial_state.kcol,
-                    kdir: initial_state.kdir,
                     prev_tab: "history",
                     code_styled: false,
                     run_history: [],
@@ -156,6 +152,7 @@
                         push_stack: push_code_stack,
                         pop_stack: pop_code_stack
                     },
+                    field: JSON.parse(initial_field),
                     controls: {
                         play: run_play,
                         play_back: run_play_back,
@@ -166,15 +163,16 @@
                         back: run_back
                     },
                     reset_karel: () => {
-                        // state.grid = JSON.parse(initial_state.grid_string)
-                        state.krow = initial_state.krow
-                        state.kcol = initial_state.kcol
-                        state.kdir = initial_state.kdir
+                        // state.field.grid = JSON.parse(initial_field.grid_string)
+                        let parsed = JSON.parse(initial_field)
+                        state.field.krow = parsed.krow
+                        state.field.kcol = parsed.kcol
+                        state.field.kdir = parsed.kdir
                         refresh()
                     },
                     reset_state: () => {
                         state.reset_karel()
-                        // state.grid = JSON.parse(initial_state.grid_string)
+                        // state.field.grid = JSON.parse(initial_field.grid_string)
                         state.run_history = []
                         state.run_history_pos = 0
                         state.code.timer = null
@@ -186,27 +184,14 @@
                         state.code.vars = {}
                     },
                     backup_state: () => {
-                        state.backup = [
-                            JSON.stringify(state.grid),
-                            state.krow,
-                            state.kcol,
-                            state.kdir
-                        ]
+                        state.backup = JSON.stringify(state.field)
                     },
                     restore_state: () => {
-                        state.grid = JSON.parse(state.backup[0])
-                        state.krow = state.backup[1]
-                        state.kcol = state.backup[2]
-                        state.kdir = state.backup[3]
+                        state.field = JSON.parse(state.backup)
                         refresh()
                     },
                     backup_restore: () => {
-                        let backup = [
-                            JSON.stringify(state.grid),
-                            state.krow,
-                            state.kcol,
-                            state.kdir
-                        ]
+                        let backup = JSON.stringify(state.field)
                         if(state.backup) {
                             state.restore_state()
                         }
@@ -312,7 +297,7 @@
                     }
                     // whiles jump back to check
                     let next_command = state.code.parsed[state.code.pos]
-                    if(state.code.indent_level() > next_command.indent) {
+                    while(state.code.indent_level() > next_command.indent) {
                         let last_line = state.code.stack[state.code.stack.length - 1]
                         let last_command = state.code.parsed[last_line]
                         state.code.pop_stack()
@@ -328,21 +313,14 @@
                                 state.code.pos = next_command.end
                             }
                         }
+                        next_command = state.code.parsed[state.code.pos]
                     }
                     style_code(state.code.pos)
                     refresh()
                     return false
                 }
-                // TODO: change other code with run forward not being actually execute
-                // since that functionality has been removed
                 function run_back() {
                     if(state.run_history_pos == 0) {
-                        // this seems like an ugly hack
-                        // for the specific case when you have a conditional check at the start of the program
-                        // TODO maybe??? put checks in the call history?
-                        // next two lines may be a hack
-                        state.code.pos = state.code.initial_pos
-                        refresh() // to show current code position
                         run_pause()
                         return
                     }
@@ -361,8 +339,6 @@
                     while(state.run_history_pos > 0) {
                         run_back()
                     }
-                    // needed since checks are not in the call history?
-                    state.code.pos = state.code.initial_pos
                     refresh()
                 }
                 function run_fast_forward() {
@@ -521,64 +497,62 @@
                 ctx.translate(style.imgw * (col + .5), style.imgh * (row + .5))
                 ctx.rotate(angle)
                 ctx.translate(-.5 * img.width, -.5 * img.height)
-                // ctx.scale(ratio, ratio)
                 ctx.drawImage(img, 0, 0)
                 ctx.restore()
             }
             function draw_grid() {
-                ctx.fillStyle = style.bg // maybe move to when style changes or something
                 ctx.fillRect(0, 0, canv.width, canv.height)
                 for(let row = 0; row < rows; row++) {
                     for(let col = 0; col < cols; col++) {
-                        if(state.grid[row][col] == 0) draw(style.empty, col, row)
+                        if(state.field.grid[row][col] == 0) draw(style.empty, col, row)
                         else draw(style.beeper, col, row)
                     }
                 }
             }
             function draw_karel() {
-                draw(style.karel, state.kcol, state.krow, state.kdir)
+                draw(style.karel, state.field.kcol, state.field.krow, state.field.kdir)
             }
             function try_undo(id) {
                 // might add error check later
                 if(id == "move") {
-                    if(state.kdir == constants.right) {
-                        state.kcol -= 1
+                    if(state.field.kdir == constants.right) {
+                        state.field.kcol -= 1
                     }
-                    else if(state.kdir == constants.down) {
-                        state.krow -= 1
+                    else if(state.field.kdir == constants.down) {
+                        state.field.krow -= 1
                     }
-                    else if(state.kdir == constants.left) {
-                        state.kcol += 1
+                    else if(state.field.kdir == constants.left) {
+                        state.field.kcol += 1
                     }
                     else {
-                        state.krow += 1
+                        state.field.krow += 1
                     }
                 }
                 else if(id == "turn_left") {
-                    state.kdir = (state.kdir + 1) % 4
+                    state.field.kdir = (state.field.kdir + 1) % 4
                 }
                 else if(id == "put_beeper") {
-                    if(state.grid[state.krow][state.kcol] == 0) {
+                    if(state.field.grid[state.field.krow][state.field.kcol] == 0) {
                         error("NO BEEPERS TO UNDO PUT")
                         return true
                     }
-                    state.grid[state.krow][state.kcol]--
+                    state.field.grid[state.field.krow][state.field.kcol]--
                 }
                 else if(id == "pick_beeper") {
-                    state.grid[state.krow][state.kcol]++
+                    state.field.grid[state.field.krow][state.field.kcol]++
                 }
             }
             function front_is_clear() {
-                if(state.kdir == constants.right && state.kcol >= cols - 1) {
+                if(state.field.kdir == constants.right && state.field.kcol >= cols - 1) {
                     return false
                 }
-                else if(state.kdir == constants.down && state.krow >= rows - 1) {
+                else if(state.field.kdir == constants.down && state.field.krow >= rows - 1) {
                     return false
                 }
-                else if(state.kdir == constants.left && state.kcol <= 0) {
+                else if(state.field.kdir == constants.left && state.field.kcol <= 0) {
                     return false
                 }
-                else if(state.krow <= 0) {
+                else if(state.field.krow <= 0) {
                     return false
                 }
                 return true
@@ -590,32 +564,32 @@
                         error("FRONT IS NOT CLEAR")
                         return true
                     }
-                    if(state.kdir == constants.right) {
-                        state.kcol += 1
+                    if(state.field.kdir == constants.right) {
+                        state.field.kcol += 1
                     }
-                    else if(state.kdir == constants.down) {
-                        state.krow += 1
+                    else if(state.field.kdir == constants.down) {
+                        state.field.krow += 1
                     }
-                    else if(state.kdir == constants.left) {
-                        state.kcol -= 1
+                    else if(state.field.kdir == constants.left) {
+                        state.field.kcol -= 1
                     }
                     else {
-                        state.krow -= 1
+                        state.field.krow -= 1
                     }
                     
                 }
                 else if(id == "turn_left") {
-                    state.kdir = (state.kdir + 3) % 4
+                    state.field.kdir = (state.field.kdir + 3) % 4
                 }
                 else if(id == "put_beeper") {
-                    state.grid[state.krow][state.kcol]++
+                    state.field.grid[state.field.krow][state.field.kcol]++
                 }
                 else if(id == "pick_beeper") {
-                    if(state.grid[state.krow][state.kcol] == 0) {
+                    if(state.field.grid[state.field.krow][state.field.kcol] == 0) {
                         error("NO BEEPERS TO PICK")
                         return true
                     }
-                    state.grid[state.krow][state.kcol]--
+                    state.field.grid[state.field.krow][state.field.kcol]--
                 }
             }
             function try_test(test) {
@@ -626,61 +600,61 @@
                     return !front_is_clear()
                 }
                 else if(test == "beepers_present") {
-                    return state.grid[state.krow][state.kcol] > 0
+                    return state.field.grid[state.field.krow][state.field.kcol] > 0
                 }
                 else if(test == "no_beepers_present") {
-                    return state.grid[state.krow][state.kcol] == 0
+                    return state.field.grid[state.field.krow][state.field.kcol] == 0
                 }
                 else if(test == "front_is_blocked") {
                     return !front_is_clear()
                 }
                 else if(test == "left_is_clear") {
-                    state.kdir--
+                    state.field.kdir--
                     res = front_is_clear()
-                    state.kdir++
+                    state.field.kdir++
                     return res
                 }
                 else if(test == "left_is_blocked") {
-                    state.kdir--
+                    state.field.kdir--
                     res = !front_is_clear()
-                    state.kdir++
+                    state.field.kdir++
                     return res
                 }
                 else if(test == "right_is_clear") {
-                    state.kdir++
+                    state.field.kdir++
                     res = front_is_clear()
-                    state.kdir--
+                    state.field.kdir--
                     return res
                 }
                 else if(test == "right_is_blocked") {
-                    state.kdir++
+                    state.field.kdir++
                     res = !front_is_clear()
-                    state.kdir--
+                    state.field.kdir--
                     return res
                 }
                 else if(test == "facing_north") {
-                    return state.kdir == constants.up
+                    return state.field.kdir == constants.up
                 }
                 else if(test == "not_facing_north") {
-                    return state.kdir == !constants.up
+                    return state.field.kdir == !constants.up
                 }
                 else if(test == "facing_south") {
-                    return state.kdir == constants.down
+                    return state.field.kdir == constants.down
                 }
                 else if(test == "not_facing_south") {
-                    return state.kdir == !constants.down
+                    return state.field.kdir == !constants.down
                 }
                 else if(test == "facing_east") {
-                    return state.kdir == constants.right
+                    return state.field.kdir == constants.right
                 }
                 else if(test == "not_facing_east") {
-                    return state.kdir == !constants.right
+                    return state.field.kdir == !constants.right
                 }
                 else if(test == "facing_west") {
-                    return state.kdir == constants.left
+                    return state.field.kdir == constants.left
                 }
                 else if(test == "not_facing_west") {
-                    return state.kdir == !constants.left
+                    return state.field.kdir == !constants.left
                 }
 // //beepers_in_bag()	no_beepers_in_bag()	Does Karel have any beepers in its bag?
             }
@@ -692,11 +666,11 @@
                 }
             }
             function click_box(col, row) {
-                if(state.grid[row][col] > 0) {
-                    state.grid[row][col] = 0
+                if(state.field.grid[row][col] > 0) {
+                    state.field.grid[row][col] = 0
                 }
                 else {
-                    state.grid[row][col] = 1
+                    state.field.grid[row][col] = 1
                 }
                 refresh()
             }
@@ -795,7 +769,6 @@
                     }
                 }
                 else if(state.prev_tab == "playground") {
-                    // state.restore_state()
                     state.backup_restore()
                 }
                 
@@ -810,7 +783,6 @@
                     ta.style.display = "block"
                 }
                 else if(tab == "playground") {
-                    // state.backup_state()
                     state.backup_restore()
                     ta.style.display = "none"
                     document.getElementById("td1").width = 0
@@ -895,7 +867,6 @@
             }
             function change_style() {
                 style = styles[document.getElementById("style_switcher").value]
-                // TODO: maybe set it once on style change?
                 canv.width = style.imgw * cols
                 canv.height = style.imgh * rows
                 ctx.fillStyle = style.bg

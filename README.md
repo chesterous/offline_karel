@@ -32,7 +32,6 @@ Some features:
 
 ## TODO
 * Bug fixes
-    * bug on line 320, will try to fix later
     * seems to get into a state where correctness markers for code get into line strings
     * maybe when pausing in debugger or something... might fix to make this state impossible
     * if code gets into a broken state, it starts behaving weirdly
