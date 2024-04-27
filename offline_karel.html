@@ -51,6 +51,8 @@
             let style = styles[Object.keys(styles)[0]]
             let timeout_ms = 500
             const constants = {
+                max_rows: 100,
+                max_cols: 100,
                 // directions
                 right: 0,
                 down: 1,
@@ -100,12 +102,14 @@
             // dimensions of the world
             let cols = 15
             let rows = 6
-            let initial_field = JSON.stringify({
-                kcol: 0,
-                krow: rows - 1,
-                kdir: constants.right,
-                grid: Array(rows).fill(Array(cols).fill(0))
-            })
+            function initial_field() {
+                return {
+                    kcol: 0,
+                    krow: rows - 1,
+                    kdir: constants.right,
+                    grid: JSON.parse(JSON.stringify(Array(constants.max_rows).fill(Array(constants.max_cols).fill(0))))
+                }
+            }
             var canv, ctx
             function setup_state() {
                 function push_code_stack(line) {
@@ -152,7 +156,7 @@
                         push_stack: push_code_stack,
                         pop_stack: pop_code_stack
                     },
-                    field: JSON.parse(initial_field),
+                    field: initial_field(),
                     controls: {
                         play: run_play,
                         play_back: run_play_back,
@@ -164,10 +168,10 @@
                     },
                     reset_karel: () => {
                         // state.field.grid = JSON.parse(initial_field.grid_string)
-                        let parsed = JSON.parse(initial_field)
-                        state.field.krow = parsed.krow
-                        state.field.kcol = parsed.kcol
-                        state.field.kdir = parsed.kdir
+                        let init = initial_field()
+                        state.field.krow = init.krow
+                        state.field.kcol = init.kcol
+                        state.field.kdir = init.kdir
                         refresh()
                     },
                     reset_state: () => {
@@ -228,24 +232,24 @@
                         return true
                     }
 
-                    // TODO: this might push errored stuff into the history
-                    // that doesn't actually execute, not sure if htat's good or bad
-                    state.run_history.splice(state.run_history_pos) // maybe not necessary, was for playground
-                    state.run_history.push({
+                    let history_object = {
                         pos: state.code.pos,
                         stack: JSON.stringify(state.code.stack),
                         indent_stack: JSON.stringify(state.code.indent_stack),
                         vars: JSON.stringify(state.code.vars)
-                    })
-                    state.run_history_pos++
+                    }
 
                     let command = state.code.parsed[state.code.pos]
 
                     if(command.type == "call") {
                         let err = try_call(command.id)
-                        if(!err) {
+                        if(err) {
+                            return true
+                        }
+                        else {
                             state.code.pos++
                         }
+                        
                     }
                     else if(command.type == "fcall") {
                         // TODO maybe? put jumps in code, rather than having a name lookup
@@ -256,6 +260,7 @@
                         }
                         else {
                             error("CALLING NO FUNCTION")
+                            return true
                         }
                     }
                     else if(command.type == "fdef") {
@@ -317,6 +322,11 @@
                     }
                     style_code(state.code.pos)
                     refresh()
+                    // TODO: this might push errored stuff into the history
+                    // that doesn't actually execute, not sure if htat's good or bad
+                    state.run_history.splice(state.run_history_pos) // maybe not necessary, was for playground
+                    state.run_history.push(history_object)
+                    state.run_history_pos++
                     return false
                 }
                 function run_back() {
@@ -879,6 +889,19 @@
                     state.timer = setInterval(state.timer_f, timeout_ms)
                 }
             }
+            function change_cols() {
+                cols = document.getElementById("col_field").value
+                state.reset_state() // might not need this at some point
+                change_style() // to refresh things?
+            }
+            function change_rows() {
+                rows = document.getElementById("row_field").value
+                // if(state.field.krow >= rows) {
+                //     state.field.krow = rows - 1
+                // }
+                state.reset_state() // might not need this at some point
+                change_style() // to refresh things?
+            }
             function blurs() {
                 let tab = document.getElementById("id_title").value
                 if(tab == "code") {
@@ -917,5 +940,9 @@
           <select name="style_switcher" id="style_switcher" onchange="change_style()"></select>
           <label for="fps_field">FPS</label>
           <input type="number" id="fps_field" name="fps_field" onchange="change_fps()" min="1" max="1000" value="30" />
+          <label for="row_field">row</label>
+          <input type="number" id="row_field" name="row_field" onchange="change_rows()" min="1" max="100" value="7" />
+          <label for="col_field">cols</label>
+          <input type="number" id="col_field" name="col_field" onchange="change_cols()" min="1" max="100" value="15" />
     </body>
 </html>
