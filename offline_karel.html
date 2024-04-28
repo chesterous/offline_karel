@@ -8,10 +8,36 @@
                 overflow-wrap: normal;
                 overflow-x: scroll;
             }
+            #popup_div {
+                display:none;
+                overflow:hidden;
+                position:absolute;
+                left:0;
+                top:0;
+                width:100%;
+                height:100%;
+                background-color:#357;
+                opacity:0.4;
+            }
+            #message_div {
+                display:none;
+                position:absolute;
+                left:calc(50% - 10em);
+                width: 20em;
+                top:calc(50% - 5em);
+                height: 10em;
+                padding:1em;
+                background-color:#444;
+                border:.1em solid #111;
+                color:#EFE;
+                text-align: center;
+            }
+
         </style>
     </head>
     <body onload="setup()">
         <script>
+            let error_popup_on = true
             const base64s = {
                 chubbs: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABhWlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw1AUhU/TiiIVEYuIOmSoTnZREcdSxSJYKG2FVh1MXvoHTRqSFBdHwbXg4M9i1cHFWVcHV0EQ/AFxdnBSdJES70sKLWK88Hgf591zeO8+QGhUmGoGooCqWUYqHhOzuVWx+xUBjMKHIQxIzNQT6cUMPOvrnjqp7iI8y7vvz+pT8iYDfCJxlOmGRbxBPLtp6Zz3iUOsJCnE58STBl2Q+JHrsstvnIsOCzwzZGRS88QhYrHYwXIHs5KhEs8QhxVVo3wh67LCeYuzWqmx1j35C4N5bSXNdVpjiGMJCSQhQkYNZVRgIUK7RoqJFJ3HPPwjjj9JLplcZTByLKAKFZLjB/+D37M1C9NTblIwBnS92PbHONC9CzTrtv19bNvNE8D/DFxpbX+1Acx9kl5va+EjoH8buLhua/IecLkDDD/pkiE5kp+WUCgA72f0TTlg8BboXXPn1jrH6QOQoVkt3wAHh8BEkbLXPd7d0zm3f3ta8/sBb1lypWgHKyMAAAAGYktHRAD/AP8A/6C9p5MAAAAJcEhZcwAACxMAAAsTAQCanBgAAAAHdElNRQfoBBsBMh5S5kY0AAAAGXRFWHRDb21tZW50AENyZWF0ZWQgd2l0aCBHSU1QV4EOFwAAAeVJREFUWMOtl62SgzAQx/+56UyRPMa5q0T2MZCRlZWVlX2EypV5hJOVkch7DOS6PVGgIZOQBNiZnWEIyf6yXwkK5SKR92rFWkWTBADYe1ltBPnKNc4R47Y3EBGICGxvljy0WoQGZUcBiO2N+GJ7IyUQKhNgEu0OSNiOUmp1TkQ9MOxK5G11tvvQ2J6hEADCr48CEOYuCsDcZQMcMsMk+M0nPh5/9k3CkNrezLywNhkPObVPgYGmbmF7g1Nkx6fq211DrQEQAtAGBozz3PFfFGKE1wmIaObzgpITijEcY/Ixd1MIeF5F64xTAsIFGdVfJxciaJwSHqFAkpLTMd3umeqEwoE4u9IWlpAZuid9uqhaBAi1XdoA4J2YKucsEC+DN0OYyO5jx7FyDVLgEDI7djmVaj5t4NJR4g3jwef0g1nm00Km+xm/9F2sDL9yY9gON6JQW9aDl6rh+fm6grkDc4dYKy+9kk1xH0F4AQgAyBLIUjJMKucWVNIL/Jh7Sax2ASiBwVqAUMavFb1gK3Qcy7V5oNbNe/LlvAlCJ0oveSW7P1/QlzNKPaIz6z4aAtcLE4wDkgM+fK+2XkoBADdd435JQ4/Sk938YzLzwk3XqKpTck7pj0/SA+NOHmj2/tnNmiBbDaTkH10zqfNKfmQ4AAAAAElFTkSuQmCC',
                 big_boo_scaled2x: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAYAAABV7bNHAAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AYht+mlYpUHOwg0iFDdbKLijiWWiyChdJWaNXB5NI/aNKQpLg4Cq4FB38Wqw4uzro6uAqC4A+Is4OToouU+F1SaBHjwd09vPe9L3ffAUK7zlQzEAdUzTKyqYRYKK6KwVcEEEGQ1pDETD2dW8zDc3zdw8f3uxjP8q77cwwrJZMBPpE4znTDIt4gntu0dM77xGFWlRTic+Ipgy5I/Mh12eU3zhWHBZ4ZNvLZBeIwsVjpY7mPWdVQiWeJo4qqUb5QcFnhvMVZrTdZ9578haGStpLjOs0IUlhCGhmIkNFEDXVYiNGukWIiS+cJD/+448+QSyZXDYwcSTSgQnL84H/wu7dmeWbaTQolgIEX2/6YAIK7QKdl29/Htt05AfzPwJXW8zfawPwn6a2eFj0CRraBi+ueJu8BlzvA2JMuGZIj+WkK5TLwfkbfVARGb4GhNbdv3XOcPgB56tXyDXBwCExWKHvd492D/X37t6bbvx9Hg3KVgZhZowAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+gEHAc3CqwRIgcAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAACrklEQVR42u3asU7DMBAG4D8IKR15DDYYGRl5hLJ17AYjYx+BsSMbfQRGRkbYeAzGdjIDsdSYOD7bZyeg/6RKJa2iRPn6ny8BYLH+a5nuNWmd8DqMVzMTKRrHbEqcEwXNSNCgFGP6m5umifq89LlRUKBOa4lxJSTvNF0UBf0VQUZTjDSb3O1N06h0NQrKEBR7BQwA7PfvKhnjE+PLHFfUiCQT0+0oKEGQifwtq8iRSnIzKZR17nkMdMHR86OgCEFG+Fvulbac2K4l/V6sPApKzaDD4QMA0LYXohXsYnFZVFKpTDuSxy6mNc0PdiNXUm4GSLOgdAZJ13cUFCtos30FADyszqIkpXYp7ZktQSgzSEvQoKSz1RUAYI3PKEm+bpiaWdqSKKjCNA8A+Hp6+3nTZZJPxlyzKLcoKCGDRFkkLV8Ghab13IySygxlEQXlZpBbW5yLJEkzKvSUIvWphVamUVCGoAYANuvrnyxCP4u06zZSik+edjekoIwuNtjVHvf73kZfFvkyyF7pZff3c3fFfYJ2AUG5K3N2sdpdrHb2LMNXvuhKnIIUMmgwe9xys0iaQbm1SxRkZ0p7T50ZVDqD7FSvtQ66CXz+MrEcClIQ1JvmpTOarTtlYS+Z+7Ny2MUqCIqSU6tuPJKkMlzhFFRAkEiOVjdbBrpTqHul/i/A/WIRNYdS0NxnsZCsXeJ+UjOHghRmsagu5suiu7YdncXsZNd2K+FDYKq3klaeDAqJic0eClKY5kWSUgW5M9RBeE/aOgjdXaCgGQiqKikkqHXuQUsFpcqhIEVBKt1N2tV8ctzvu2VF2ZX+Zn2dJYeCCggquk5KfQZfSg4FFRTUk2Rr6vtH2nIoqIKgSUUdiSkih4ImEDQq6pcAobABKTWOnYLmIChL2EyOkYJYLBZrzvUNlL1GOa6bdTUAAAAASUVORK5CYII=',
@@ -528,6 +554,12 @@
                 console.log("ERROR - " + msg)
                 state.timer_f = null
                 clearInterval(state.timer)
+                if(error_popup_on) {
+                    let md = document.getElementById("message_div")
+                    md.innerHTML = "<h3>Error</h3>" + msg
+                    md.style.display = "block"
+                    document.getElementById("popup_div").style.display = "block"
+                }
             }
             function draw(img, col, row, dir = constants.right) {
                 if(dir == constants.down) {
@@ -986,6 +1018,13 @@
                     style_code()
                 }
             }
+            function close_popup() {
+                document.getElementById("popup_div").style.display = "none"
+                document.getElementById("message_div").style.display = "none"
+            }
+            function warning_toggle() {
+                error_popup_on = !error_popup_on
+            }
         </script>
         <table id="tab1" style="width:100%;height:100%">
             <tr>
@@ -1022,5 +1061,9 @@
           <input type="number" id="row_field" name="row_field" onchange="change_rows()" min="1" max="100" value="7" />
           <label for="col_field">cols</label>
           <input type="number" id="col_field" name="col_field" onchange="change_cols()" min="1" max="100" value="15" />
+          <input type="checkbox" onchange="warning_toggle()" id="warn" name="warn" checked />
+          <label for="warn">Error popups</label>
+        <div id="popup_div" onclick="close_popup()"></div>
+        <div id="message_div" onclick="close_popup()">bone</div>
     </body>
 </html>

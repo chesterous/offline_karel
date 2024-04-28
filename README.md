@@ -32,12 +32,14 @@ Some features:
 
 ## TODO
 * Bug fixes
-    * improve 2-digit  rendering
-    * seems to get into a state where correctness markers for code get into line strings
-    * maybe when pausing in debugger or something... might fix to make this state impossible
-    * if code gets into a broken state, it starts behaving weirdly
-    * maybe handle broken code better (just don't run error code?)
+    * default scaling of canvas is not kind to pixel art
+        * might need to do scaling myself if good pixel art is desired
+    * still might have some situations where it gets in a broken state
 * Features needing implementation
+    * nicer looking error popup
+    * maybe add walls (some Code in Place problems have walls)
+    * have problems you can put in and then it can test solutions and give pass/fail
+    * maybe animation when playing code forward and back
     * maybe load in the problems from code in place (like karel helper)
     * probably make it more resilient by giving error messages or something
     * syntax highlighting might be nice...
