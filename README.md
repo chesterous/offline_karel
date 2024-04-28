@@ -35,27 +35,36 @@ Some features:
     * default scaling of canvas is not kind to pixel art
         * might need to do scaling myself if good pixel art is desired
     * still might have some situations where it gets in a broken state
-* Features needing implementation
-    * nicer looking error popup
+    * improve view on mobile devices
+* Features to Implement
     * maybe add walls (some Code in Place problems have walls)
-    * have problems you can put in and then it can test solutions and give pass/fail
     * maybe animation when playing code forward and back
+    * have problems you can put in and then it can test solutions and give pass/fail
     * maybe load in the problems from code in place (like karel helper)
-    * probably make it more resilient by giving error messages or something
+* Features Maybe to Implement
+    * maybe implement logic
+        * like "true", "false", "and", "or", "==", "!="
+        * but it's not explained in the basic intro doc, so maybe not
+    * maybe implement the bag functions
+       * i.e. beepers_in_bag() and no_beepers_in_bag()
+       * but I haven't seen problems with this, so maybe not
     * syntax highlighting might be nice...
        * but would have to change the textarea-style implementation
        * so, not sure if it's worth it
-    * maybe implement the bag functions? (not sure if deprecated)
-       * i.e. beepers_in_bag() and no_beepers_in_bag()
+* Features that Won't be Implemented
     * corner functions WON'T be implemented, since they seem deprecated
        *  i.e. paint_corner(COLOR_NAME) and corner_color_is(COLOR_NAME)
+* (Non-Architectural) Improvements
+    * nicer looking error popup
 * Architecture changes
     * break into multiple files and just merge for a release
     * better encapsulation, for example, playing code forward/back/etc in an encapsulated unit
-* Possible future of development
-    * stackless version that doesn't support for but supports function calls without recursion by inlining all functions
+    * maybe use style sections rather than having css styles defined inside html elements
 
 ## Version History
+* 1.2
+    * error popups
+    * slight style changes
 * 1.1
     * added beeper counter for multiple beepers on a square
 * 1.0
