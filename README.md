@@ -32,13 +32,12 @@ Some features:
 
 ## TODO
 * Bug fixes
+    * improve 2-digit  rendering
     * seems to get into a state where correctness markers for code get into line strings
     * maybe when pausing in debugger or something... might fix to make this state impossible
     * if code gets into a broken state, it starts behaving weirdly
     * maybe handle broken code better (just don't run error code?)
 * Features needing implementation
-    * user ability to resize grid
-    * forgot to add a count if there are multiple beepers on a square
     * maybe load in the problems from code in place (like karel helper)
     * probably make it more resilient by giving error messages or something
     * syntax highlighting might be nice...
@@ -55,6 +54,8 @@ Some features:
     * stackless version that doesn't support for but supports function calls without recursion by inlining all functions
 
 ## Version History
+* 1.1
+    * added beeper counter for multiple beepers on a square
 * 1.0
     * function calls sort of maybe work
     * but this code is ugly and probably bug-ridden
@@ -102,6 +103,5 @@ Some features:
 
 * [Code in Place](https://codeinplace.stanford.edu/)
 * [Intro to the Karel variant](https://compedu.stanford.edu/karel-reader/docs/python/en/intro.html)
-
-(corner color functions seem to be deprecated)
+* [Karel helper (similar project)](https://karelhelper.com/)
 
