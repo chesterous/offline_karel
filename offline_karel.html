@@ -157,7 +157,8 @@
                         parsed: [],
                         timer: null,
                         timer_f: null,
-                        initial_pos: 0,
+                        initial_pos: -1,
+                        final_pos: -1,
                         pos: 0,
                         load: load_code,
                         stack: [],
@@ -236,6 +237,10 @@
                         error("SOMEHOW RUNNING BEFORE CODE PROPERLY PARSED")
                         return true
                     }
+
+                    if(state.code.pos == state.code.final_pos) {
+                        return true
+                    }
                     
                     // there is always a noop code at the end
                     if(state.code.pos >= state.code.parsed.length - 1) {
@@ -276,8 +281,8 @@
                         }
                     }
                     else if(command.type == "fdef") {
-                        // or just skip this line?
-                        state.code.pos++
+                        // skip function
+                        state.code.pos = state.code.parsed[state.code.pos].end
                     }
                     else if(command.type == "for") {
                         if(!state.code.vars.hasOwnProperty(command.var)) {
@@ -413,8 +418,12 @@
                     }
                     function find_block_end(start) {
                         let res
-                        for(res = start + 1; res < spaces.length && spaces[res] > spaces[start]; res++);
-                        return res
+                        for(res = start + 1; res < spaces.length && (spaces[res] > spaces[start] || state.code.unparsed[res].trim == ""); res++);
+                        res--
+                        while(res > 0 && state.code.unparsed[res].trim() == "") {
+                            res--
+                        }
+                        return res + 1
                     }
                     state.code.parsed = []
                     state.code.fdefs = {}
@@ -484,12 +493,24 @@
                 function load_code(code) {
                     state.code.unparsed = code.split("\n")
                     parse()
+                    state.code.initial_pos = -1
                     // find first line
                     for(let i = 0; i < state.code.parsed.length; i++) {
                         let line = state.code.parsed[i]
                         if(line.indent == 0 && line.type != "fdef" && line.type != "noop" && line.type != "error") {
                             state.code.initial_pos = i
                             break
+                        }
+                    }
+                    state.code.final_pos = state.code.parsed.length - 1
+                    if(state.code.initial_pos == -1) {
+                        let i = state.code.fdefs["main"]
+                        if(i != undefined) {
+                            state.code.initial_pos =  i
+                            state.code.final_pos = state.code.parsed[i].end
+                        }
+                        else {
+                            state.code.initial_pos = 0
                         }
                     }
                     state.code.pos = state.code.initial_pos
